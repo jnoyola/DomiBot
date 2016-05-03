@@ -1,0 +1,2 @@
+The .cpp file is the edited simulation from the tutorial files. It reads the kuka files.
+The kuka_iiwa folder has the relevant xml files. It has been edited so it works. Need to copy over to run the simulation
