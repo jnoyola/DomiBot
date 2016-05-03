@@ -9,8 +9,6 @@ from domi import calibration, filters, detectors, draw
 
 # Load image
 frame = cv2.imread('frame.png')
-# Crop only the individual dominoes for calibration
-frame = frame[:,0:frame.shape[1] * 0.4]
 
 
 # Filter

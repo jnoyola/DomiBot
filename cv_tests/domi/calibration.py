@@ -2,12 +2,11 @@ import numpy as np
 import cv2
 
 def calibrate_with_corners(corners):
-    print "Calibrating with " + str(len(corners)) + " dominoes."
-
     total_short_edge_len = 0
+    num_used = 0
     for domino in corners:
-        assert (len(domino) > 3), "Not enough corners detected for calibration!"
-        assert (len(domino) < 5), "Too many corners detected for calibration!"
+        if len(domino) != 4:
+            continue
         
         dists = []
         
@@ -25,8 +24,12 @@ def calibrate_with_corners(corners):
         dists.sort()
         total_short_edge_len += np.sqrt(dists[0])
         total_short_edge_len += np.sqrt(dists[1])
+        num_used += 1
         
-    short_edge_len = total_short_edge_len / (2 * len(corners))
+    short_edge_len = total_short_edge_len / (2 * num_used)
 
+    assert (num_used > 0), "No individual dominoes detected for calibration!"
+
+    print "Calibration: using " + str(num_used) + " individual dominoes"
     print "Calibration: short_edge_len = " + str(short_edge_len)
     return short_edge_len
