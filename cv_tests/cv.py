@@ -14,15 +14,21 @@ frame = cv2.imread('frame.png')
 # Filter
 black_white = filters.black_white(frame)
 
-# Compute
-pips, edges = detectors.img_to_contour_points(black_white)
-corners = detectors.all_contour_points_to_corners(edges)
+# Detect
+pip_contours, edge_contours = detectors.img_to_contour_points(black_white)
+corners = detectors.all_contour_points_to_corners(edge_contours)
 
 # Calibrate
-calibration.calibrate_with_corners(corners)
+size = calibration.calibrate_with_corners(corners)
+
+# Compute
+stash_corners, game_corners, other_stash_corners = detectors.img_corners_to_groups(frame, corners)
+stash_grids = detectors.all_corners_to_grids(stash_corners, size)
+game_grids = detectors.all_corners_to_grids(game_corners, size)
 
 # Draw
-draw.draw_corners(frame, corners)
+draw.draw_grids(frame, stash_grids, color=(255,0,0))
+draw.draw_grids(frame, game_grids, color=(0,255,0))
 
 cv2.imshow('frame', frame)
 

@@ -25,10 +25,13 @@ def calibrate_with_corners(corners):
         total_short_edge_len += np.sqrt(dists[0])
         total_short_edge_len += np.sqrt(dists[1])
         num_used += 1
-        
-    short_edge_len = total_short_edge_len / (2 * num_used)
 
     assert (num_used > 0), "No individual dominoes detected for calibration!"
+    
+    short_edge_len = total_short_edge_len / (2 * num_used)
+    
+    # Multiply by 0.5 long:short edge ratio
+    short_edge_len *= 1.06
 
     print "Calibration: using " + str(num_used) + " individual dominoes"
     print "Calibration: short_edge_len = " + str(short_edge_len)
