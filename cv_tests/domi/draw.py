@@ -11,6 +11,13 @@ def draw_grids(img, grids, r=2, color=(0,255,0), thickness=2):
         for point in grid.itervalues():
             cv2.circle(img, point, r, color, thickness)
 
+def draw_partitions(img, margin=0.33, color=(0,0,0), thickness=2):
+    height = img.shape[0]
+    y_top = int(height * margin)
+    y_bot = int(height * (1 - margin))
+    cv2.line(img, (0, y_top), (img.shape[1] - 1, y_top), color, thickness)
+    cv2.line(img, (0, y_bot), (img.shape[1] - 1, y_bot), color, thickness)
+
 def draw_connectors(img, connectors, length=5, color=(0,0,150), thickness=2):
     for component in connectors:
         for pips, pos, ori in component:

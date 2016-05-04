@@ -32,6 +32,7 @@ game_connectors = detectors.all_grids_to_connectors(game_grids, mask, pip_contou
 # Draw
 draw.draw_grids(frame, stash_grids, color=(255,0,0))
 draw.draw_grids(frame, game_grids, color=(0,255,0))
+draw.draw_partitions(frame)
 draw.draw_connectors(frame, stash_connectors)
 draw.draw_connectors(frame, game_connectors)
 
