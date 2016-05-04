@@ -1,3 +1,4 @@
+import numpy as np
 import cv2
 
 def draw_corners(img, corners, r=2, color=(0,255,0), thickness=2):
@@ -9,3 +10,14 @@ def draw_grids(img, grids, r=2, color=(0,255,0), thickness=2):
     for grid in grids:
         for point in grid.itervalues():
             cv2.circle(img, point, r, color, thickness)
+
+def draw_connectors(img, connectors, length=5, color=(0,0,150), thickness=2):
+    for component in connectors:
+        for pips, pos, ori in component:
+            x2 = int(pos[0] + length * np.cos(-ori))
+            y2 = int(pos[1] + length * np.sin(-ori))
+            cv2.line(img, pos, (x2, y2), color, thickness)
+            
+            x3 = int(x2 + 10 * np.cos(-ori)) - 5
+            y3 = int(y2 + 10 * np.sin(-ori)) + 5
+            cv2.putText(img, str(pips), (x3, y3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, thickness)

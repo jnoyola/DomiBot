@@ -1,13 +1,15 @@
 import numpy as np
 import cv2
+import cv2.cv as cv
 
 def img_to_contours(img):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     pips = []
     edges = []
+    mask = np.zeros(img.shape, dtype=img.dtype)
     
-    for contour in contours:
+    for i, contour in enumerate(contours):
     
         # Filter based on length and position of contour
         l = len(contour)
@@ -24,11 +26,12 @@ def img_to_contours(img):
                     break
             if not is_border:
                 edges.append(contour)
+                cv2.drawContours(mask, contours, i, 255, thickness=cv.CV_FILLED)
 
-    return (pips, edges)
+    return (pips, edges, mask)
 
 def img_to_contour_points(img):
-    pips_, edges_ = img_to_contours(img)
+    pips_, edges_, mask = img_to_contours(img)
 
     pips = []
     for contour in pips_:
@@ -44,7 +47,7 @@ def img_to_contour_points(img):
             contour_points.append((point[0][0], point[0][1]))
         edges.append(contour_points)
 
-    return pips, edges
+    return pips, edges, mask
 
 def contour_point_to_angle(contour, i, k=1):
     x1 = contour[i][0]
@@ -207,15 +210,103 @@ def all_corners_to_grids(corners, size):
 
     return grids
 
-def grid_to_pip_grid(grid, pip_contours):
-    return [[]]
+def grid_to_connector_positions(grid, mask):
 
-def all_grids_to_pip_grids(grids, pip_contours):
-    pip_grids = []
+    # Find all positions that are the bottom left corner of a piece
+    piece_positions = set()
+    for p in grid:
+    
+        # Check that the other corners exist in the grid
+        up = grid.get((p[0], p[1] + 1))
+        right = grid.get((p[0] + 1, p[1]))
+        diag = grid.get((p[0] + 1, p[1] + 1))
+        if up != None and right != None and diag != None:
+        
+            # And that the center if the piece is within the contour
+            x = int((grid[p][0] + up[0] + right[0] + diag[0]) / 4)
+            y = int((grid[p][1] + up[1] + right[1] + diag[1]) / 4)
+            if mask[y,x] > 0:
+                piece_positions.add(p)
+
+    # Now find the positions that only have another piece in one direction
+    # These are the ends
+    connectors = []
+    directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    for p in piece_positions:
+        adj_dx = None
+        adj_dy = None
+        for dx, dy in directions:
+            if (p[0] + dx, p[1] + dy) in piece_positions:
+                if adj_dx == None:
+                    adj_dx = dx
+                    adj_dy = dy
+                else:
+                    adj_dx = None
+                    break
+        if adj_dx != None:
+            connectors.append((p, (-adj_dx, -adj_dy)))
+
+    return connectors
+
+def count_pips_in_grid_position(grid, p, pip_contours):
+
+    # Create piece boundary from grid
+    p0 = np.array(grid[p])
+    p1 = np.array(grid[(p[0], p[1] + 1)])
+    p2 = np.array(grid[(p[0] + 1, p[1] + 1)])
+    p3 = np.array(grid[(p[0] + 1, p[1])])
+    contour = np.array([p0, p1, p2, p3])
+
+    # Count pip contours that lie within this boundary
+    count = 0
+    for pip_contour in pip_contours:
+        if cv2.pointPolygonTest(contour, pip_contour[0], False) >= 0:
+            count += 1
+
+    return count
+
+def grid_point_to_pos_and_ori(grid, point, direction):
+
+    # Choose p1 and p2 such that they go CCW on the edge in the give direction
+    p1 = None
+    p2 = None
+    if direction[0] == 1:
+        p1 = (point[0] + 1, point[1])
+        p2 = (point[0] + 1, point[1] + 1)
+    elif direction[0] == -1:
+        p1 = (point[0], point[1] + 1)
+        p2 = point
+    elif direction[1] == 1:
+        p1 = (point[0] + 1, point[1] + 1)
+        p2 = (point[0], point[1] + 1)
+    elif direction[1] == -1:
+        p1 = point
+        p2 = (point[0] + 1, point[1])
+
+    pos1 = grid[p1]
+    pos2 = grid[p2]
+    pos = ((pos1[0] + pos2[0]) / 2, (pos1[1] + pos2[1]) / 2)
+    ori = np.arctan2(pos1[1] - pos2[1], pos2[0] - pos1[0]) - np.pi / 2
+
+    return pos, ori
+
+def grid_to_connectors(grid, mask, pip_contours):
+    connectors = grid_to_connector_positions(grid, mask)
+    
+    full_connectors = []
+    for point, direction in connectors:
+        pip_count = count_pips_in_grid_position(grid, point, pip_contours)
+        pos, ori = grid_point_to_pos_and_ori(grid, point, direction)
+        full_connectors.append((pip_count, pos, ori))
+    
+    return full_connectors
+
+def all_grids_to_connectors(grids, mask, pip_contours):
+    connectors = []
     for grid in grids:
-        pip_grids.append(grid_to_pip_grid(grid, pip_contours))
+        connectors.append(grid_to_connectors(grid, mask, pip_contours))
 
-    return pip_grids
+    return connectors
 
 
 
