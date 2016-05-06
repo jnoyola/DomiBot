@@ -31,7 +31,11 @@ SET(EIGEN_INC_DIR ${SCL_BASE_DIR}3rdparty/eigen/)
 
 ###(c) Chai3D scenegraph
 SET(CHAI_INC_DIR ${SCL_BASE_DIR}3rdparty/chai3d-3.0/chai3d/)
-ADD_DEFINITIONS(-D_MACOSX -DMACOSX)
+if(APPLE)
+	ADD_DEFINITIONS(-D_MACOSX -DMACOSX)
+else()
+	ADD_DEFINITIONS(-D_LINUX -DLINUX)
+endif()
 
 ### (d) sUtil code
 SET(SUTIL_INC_DIR ${SCL_BASE_DIR}3rdparty/sUtil/src/)
