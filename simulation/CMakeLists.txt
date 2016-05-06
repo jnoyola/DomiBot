@@ -128,5 +128,6 @@ if(APPLE)
 		${OpenGL_LIBRARY}
 	)
 else()
-	target_link_libraries(project ${CHAI_LIBRARY} GOMP GL GLU GLEW GLUT NCURSES rt dl)
+	target_link_libraries(project ${CHAI_LIBRARY})
+	target_link_libraries(project GOMP GL GLU GLEW GLUT NCURSES rt dl)
 endif()
