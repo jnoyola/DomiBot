@@ -14,7 +14,11 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 ################Initialize the 3rdParty lib#################
 
 #Set scl base directory
-SET(SCL_BASE_DIR ../../../../3rdparty/scl-manips-v2.git/)
+if(APPLE)
+	SET(SCL_BASE_DIR ../../../../3rdparty/scl-manips-v2.git/)
+else()
+	SET(SCL_BASE_DIR ../../../)
+endif()
 
 ###(a) Scl controller
 SET(SCL_INC_DIR ${SCL_BASE_DIR}src/scl/)
@@ -33,9 +37,15 @@ ADD_DEFINITIONS(-D_MACOSX -DMACOSX)
 SET(SUTIL_INC_DIR ${SCL_BASE_DIR}3rdparty/sUtil/src/)
 
 ### (e) scl_tinyxml (parser)
-SET(TIXML_INC_DIR ${SCL_BASE_DIR}3rdparty/tinyxml)
+if(APPLE)
+	SET(TIXML_INC_DIR ${SCL_BASE_DIR}3rdparty/tinyxml)
+else()
+	SET(TIXML_INC_DIR ../../3rdparty/tinyxml)
+endif()
 
-SET(GLEW_PATH /usr/local/Cellar/glew/1.13.0/)
+if(APPLE)
+	SET(GLEW_PATH /usr/local/Cellar/glew/1.13.0/)
+endif()
 
 ################Initialize the executable#################
 #Set the include directories
@@ -52,15 +62,26 @@ INCLUDE_DIRECTORIES(
 )
 
 #Set the compilation flags
-SET(CMAKE_CXX_FLAGS "-Wall -fPIC")
+if(APPLE)
+	SET(CMAKE_CXX_FLAGS "-Wall -fPIC")
+else()
+	SET(CMAKE_CXX_FLAGS "-Wall -fPIC -fopenmp")
+endif()
 SET(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0 -pg -std=c++0x -DGRAPHICS_ON -DASSERT=assert -DDEBUG=1")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++0x -DGRAPHICS_ON -DW_THREADING_ON -DNDEBUG")
 
 #Set all the sources required for the library
-SET(ALL_SRC project.cpp
+if(APPLE)
+	SET(ALL_SRC project.cpp
             ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp
             ${SCL_INC_DIR}/graphics/chai/data_structs/SGraphicsChai.cpp)
+else()
+	SET(ALL_SRC ${TUTE_BASE_DIR}/project.cpp
+            ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
+            ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp)
+endif()
+	
 
 #Set the executable to be built and its required linked libraries (the ones in the /usr/lib dir)
 add_executable(project ${ALL_SRC})
@@ -97,11 +118,15 @@ target_link_libraries(project ${CHAI_LIBRARY})
 ###############CODE TO FIND AND LINK REMANING LIBS ######################
 FIND_LIBRARY(COCOA_LIBRARY Cocoa)
 FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
-target_link_libraries(project
-	${GLEW_PATH}lib/libGLEW.dylib
-	/opt/X11/lib/libglut.dylib
-	ncurses
-	dl
-	${COCOA_LIBRARY}
-	${OpenGL_LIBRARY}
-)
+if(APPLE)
+	target_link_libraries(project
+		${GLEW_PATH}lib/libGLEW.dylib
+		/opt/X11/lib/libglut.dylib
+		ncurses
+		dl
+		${COCOA_LIBRARY}
+		${OpenGL_LIBRARY}
+	)
+else()
+	target_link_libraries(project ${CHAI_LIBRARY})
+endif()

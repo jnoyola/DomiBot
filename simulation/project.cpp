@@ -101,7 +101,11 @@ int main(int argc, char** argv)
   flag = flag && rgcm.init(rds);            //Simple way to set up dynamic tree...
   flag = flag && dyn_tao.init(rds);         //Set up integrator object
   flag = flag && dyn_scl.init(rds);         //Set up kinematics and dynamics object
-  flag = flag && rio.init(rds);             //Set up the I/O data structure
+  #ifdef __APPLE__
+    flag = flag && rio.init(rds);             //Set up the I/O data structure
+  #else
+    flag = flag && rio.init(rds.name_,rds.dof_);
+  #endif
   if(false == flag){ return 1; }            //Error check.
 
   /******************************Set up Controller Specification************************************/
