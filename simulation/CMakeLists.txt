@@ -77,6 +77,7 @@ if(APPLE)
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp
             ${SCL_INC_DIR}/graphics/chai/data_structs/SGraphicsChai.cpp)
 else()
+	SET(TUTE_BASE_DIR ${SCL_BASE_DIR}/tutorial/DomiBot/simulation/)
 	SET(ALL_SRC ${TUTE_BASE_DIR}/project.cpp
             ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp)
