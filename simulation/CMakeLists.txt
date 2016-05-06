@@ -37,11 +37,7 @@ ADD_DEFINITIONS(-D_MACOSX -DMACOSX)
 SET(SUTIL_INC_DIR ${SCL_BASE_DIR}3rdparty/sUtil/src/)
 
 ### (e) scl_tinyxml (parser)
-if(APPLE)
-	SET(TIXML_INC_DIR ${SCL_BASE_DIR}3rdparty/tinyxml)
-else()
-	SET(TIXML_INC_DIR ../../3rdparty/tinyxml)
-endif()
+SET(TIXML_INC_DIR ${SCL_BASE_DIR}3rdparty/tinyxml)
 
 if(APPLE)
 	SET(GLEW_PATH /usr/local/Cellar/glew/1.13.0/)
@@ -77,8 +73,7 @@ if(APPLE)
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp
             ${SCL_INC_DIR}/graphics/chai/data_structs/SGraphicsChai.cpp)
 else()
-	SET(TUTE_BASE_DIR ${SCL_BASE_DIR}/tutorial/DomiBot/simulation/)
-	SET(ALL_SRC ${TUTE_BASE_DIR}/project.cpp
+	SET(ALL_SRC project.cpp
             ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp)
 endif()
@@ -129,5 +124,5 @@ if(APPLE)
 		${OpenGL_LIBRARY}
 	)
 else()
-	target_link_libraries(project ${CHAI_LIBRARY})
+	target_link_libraries(project ${CHAI_LIBRARY} GOMP GL GLU GLEW GLUT NCURSES rt dl)
 endif()
