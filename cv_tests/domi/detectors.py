@@ -14,7 +14,6 @@ def img_to_contours(img):
         # Filter based on length and position of contour
         l = len(contour)
         if l < 20:
-            # PIPS ARE UNTESTED
             pips.append(contour)
         else:
             is_border = False
@@ -132,6 +131,9 @@ def all_contour_points_to_corners(contours, k_list=[3,1]):
     return corners
 
 def img_corners_to_groups(img, corners, margin=0.33):
+
+    # CHANGE THIS TO 3-MEANS CLUSTERING
+    # OR AT LEAST USE CONTOUR CENTROIDS
 
     # Split corners into groups based on y position
     height = img.shape[0]

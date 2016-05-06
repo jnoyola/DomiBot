@@ -6,7 +6,7 @@
     <robot name="iiwaBot"> 
         <spec>iiwa</spec>
         <gravity>0.000   0.000   -9.81</gravity> 
-        <file>../../../specs/kuka_iiwa/iiwa.xml</file>
+        <file>kuka_iiwa/iiwa.xml</file>
         <root_link>
             <link_name>base</link_name>
             <position_in_parent>0.0  0.0  0.0</position_in_parent> 

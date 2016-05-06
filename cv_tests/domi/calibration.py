@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-def calibrate_with_corners(corners):
+def calibrate_with_corners(corners, should_print=False):
     total_short_edge_len = 0
     num_used = 0
     for domino in corners:
@@ -33,6 +33,7 @@ def calibrate_with_corners(corners):
     # Multiply by 0.5 long:short edge ratio
     short_edge_len *= 1.06
 
-    print "Calibration: using " + str(num_used) + " individual dominoes"
-    print "Calibration: short_edge_len = " + str(short_edge_len)
+    if should_print:
+        print "Calibration: using " + str(num_used) + " individual dominoes"
+        print "Calibration: short_edge_len = " + str(short_edge_len)
     return short_edge_len
