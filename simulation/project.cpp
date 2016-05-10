@@ -111,7 +111,11 @@ int main(int argc, char** argv)
   flag = flag && rgcm.init(rds);            //Simple way to set up dynamic tree...
   flag = flag && dyn_tao.init(rds);         //Set up integrator object
   flag = flag && dyn_scl.init(rds);         //Set up kinematics and dynamics object
-  flag = flag && rio.init(rds);
+  #ifdef __APPLE__
+    flag = flag && rio.init(rds);             //Set up the I/O data structure
+  #else
+    flag = flag && rio.init(rds.name_,rds.dof_);
+  #endif
   for(unsigned int i=0;i<rds.dof_;++i){ rio.sensors_.q_(i) = rds.rb_tree_.at(i)->joint_default_pos_; }
   if(false == flag){ return 1; }            //Error check.
 
