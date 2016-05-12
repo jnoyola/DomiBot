@@ -54,6 +54,8 @@ scl. If not, see <http://www.gnu.org/licenses/>.
  // writing txt files
 #include <fstream>
 
+#include "../Shared/Domi.h"
+
 // Define all the variables globally so they can be accessed across threads
 scl::SRobotParsed rds;     //Robot data structure....
 scl::SGraphicsParsed rgr;  //Robot graphics data structure...
@@ -130,6 +132,8 @@ int main(int argc, char** argv)
   if(false==flag) { std::cout<<"\nCouldn't initialize chai graphics\n"; return 1; }
 
   /******************************Simulation************************************/
+  Eigen::Vector3d hpos(0,0,0.05);
+  Domi(rgcm, rio, dyn_scl, NULL, NULL, hpos, true);
 
   /***************************************************/
   /********* Chose your controller  ******************/

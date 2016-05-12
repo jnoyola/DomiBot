@@ -73,11 +73,13 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++0x -DGRAPHICS_ON -DW_THREADING_ON -DNDE
 #Set all the sources required for the library
 if(APPLE)
 	SET(ALL_SRC project.cpp
+	    ../shared/Domi.cpp
             ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp
             ${SCL_INC_DIR}/graphics/chai/data_structs/SGraphicsChai.cpp)
 else()
 	SET(ALL_SRC project.cpp
+	    ../shared/Domi.cpp
             ${SCL_INC_DIR}/graphics/chai/CGraphicsChai.cpp 
             ${SCL_INC_DIR}/graphics/chai/ChaiGlutHandlers.cpp)
 endif()
