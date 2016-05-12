@@ -132,15 +132,10 @@ int main(int argc, char** argv)
   if(false==flag) { std::cout<<"\nCouldn't initialize chai graphics\n"; return 1; }
 
   /******************************Simulation************************************/
-  Eigen::Vector3d hpos(0,0,0.05);
-  Domi(rgcm, rio, dyn_scl, NULL, NULL, hpos, true);
 
-  /***************************************************/
-  /********* Chose your controller  ******************/
-  /***************************************************/
-  // std::thread controlThread(jointSpaceControl);
-  // std::thread controlThread(opSpacePositionControl);
-  // std::thread controlThread(opSpaceOrientationControl);
+  /****************************************/
+  /********* Controller  ******************/
+  /****************************************/
   std::thread controlThread(opSpacePositionOrientationControl);
 
   // Start up the graphics
@@ -155,309 +150,6 @@ int main(int argc, char** argv)
   return 0;
 }
 
-void jointSpaceControl()
-{
-  long iter = 0;
-  int counter = 0;
-
-  std::cout<<"\n\n***************************************************************"
-           <<"\n Starting joint space (generalized coordinate) controller..."
-           <<"\n***************************************************************\n";
-
-
-  
-
-  while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
-  {
-    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
-
-    Eigen::VectorXd q_desired(6); // desired position
-    Eigen::VectorXd g(6);         // joint space gravity
-    Eigen::VectorXd Gamma(6);
-
-    /*********************************************************/
-    /*********************************************************/
-    /*************     YOUR CODE HERE     ********************/
-    /*********************************************************/
-    /*********************************************************/
-
-    // define and chose your gains 
-    double kp = 400;
-    double kv = 150;
-
-    // desired position to set
-    q_desired << 0.5,0.5,0.5,0.5,0.5,0.5;
-
-    // gravity vector
-    // g << 0,0,0,0,0,0;
-    g = rgcm.force_gc_grav_;
-
-    // torque command to the motors
-    // compute your controller here
-    Gamma = Eigen::VectorXd::Zero(6);
-
-
-    // Gamma = kp * (q_desired - rio.sensors_.q_) - kv * rio.sensors_.dq_;
-    // Gamma = kp * (q_desired - rio.sensors_.q_) - kv * rio.sensors_.dq_ - g;
-    Gamma = rgcm.M_gc_ * (kp * (q_desired - rio.sensors_.q_) - kv * rio.sensors_.dq_) - g ;
-    
-    
-    /*********************************************************/
-    /*********************************************************/
-    /*************     END OF YOUR CODE     ******************/
-    /*********************************************************/
-    /*********************************************************/
-
-    rio.actuators_.force_gc_commanded_ = Gamma;
-
-    dyn_tao.integrate(rio,dt); iter++; const timespec ts = {0, controlSleepTime}; nanosleep(&ts,NULL);
-
-    // if(iter % 10000 == 0){
-    if(iter % 100 == 0){
-        std::cout<<"\n"<< iter*dt<<"\t"<<(q_desired - rio.sensors_.q_).transpose();
-        // std::cout<<"\nJoint torques: "<<Gamma.transpose();
-        // std::cout<<"\nJoint position: "<<rio.sensors_.q_.transpose();
-    }
-  }
-}
-
-
-
-
-void opSpacePositionControl()
-{
-  double tstart, tcurr;
-  long iter = 0;
-  bool flag = false;
-
-  const Eigen::Vector3d hpos(0,0,0.05); //control position of op-point wrt. hand
-  Eigen::MatrixXd J, Jv, A, A_inv, Lambda, M;
-  Eigen::Vector3d x, x_des, x_init, dx;
-  Eigen::VectorXd Gamma, g, F;
-  scl::SRigidBodyDyn *rhand = rgcm.rbdyn_tree_.at("end-effector");
-
-
-  std::cout<<"\n\n***************************************************************"
-      <<"\n Starting op space position controller..."
-      <<"\n***************************************************************\n";
-  tstart = sutil::CSystemClock::getSysTime(); iter = 0;
-  while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
-  {
-    // current time and compute model
-    tcurr = sutil::CSystemClock::getSysTime();
-    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
-
-    // find initial position
-    if(false == flag) { x_init = rhand->T_o_lnk_ * hpos; flag = true; }
-    
-    // Jacobians
-    dyn_scl.computeJacobianWithTransforms(J,*rhand,rio.sensors_.q_,hpos);
-    Jv = J.block(0,0,3,rio.dof_);
-
-    // Mass Matrix and its inverse
-    A = rgcm.M_gc_;
-    A_inv = rgcm.M_gc_inv_;
-
-    /*********************************************************/
-    /*********************************************************/
-    /*************     YOUR CODE HERE     ********************/
-    /*********************************************************/
-    /*********************************************************/
-
-    // gains    
-    double kp = 400;
-    double kv = 20;
-
-    // radius of circle and frequency
-    double sin_ampl = 0.15;
-    double frequency = 0.3;
-
-    // current position and velocity
-    // x << 0,0,0;
-    // dx << 0,0,0;
-
-    x = rhand->T_o_lnk_ * hpos;
-    dx = Jv * rio.sensors_.dq_;
-
-    // compute desired position
-    x_des(0) = x_init(0) + sin(tcurr*frequency*2*3.14159)*sin_ampl + 0.1; 
-    x_des(1) = x_init(1) + cos(tcurr*frequency*2*3.14159)*sin_ampl + 0.2; 
-    x_des(2) = x_init(2) - 0.1;
-
-
-    // Compute operational space Inertia matrix
-    Lambda = Eigen::MatrixXd::Identity(3,3);
-
-    M = J * A_inv * J.transpose();
-    Lambda = M.inverse();
-
-
-    // Operational space controller force
-    F = Eigen::Vector3d::Zero();
-
-    F = Lambda * (kp * (x_des - x) - kv * dx);
-
-
-    // joint space gravity
-    // g << 0,0,0,0,0,0;
-    g = rgcm.force_gc_grav_;
-
-    // compute the joint torques
-    Gamma = Eigen::VectorXd::Zero(6);
-
-    Gamma = Jv.transpose()  * F - g;
-    /*********************************************************/
-    /*********************************************************/
-    /*************     END OF YOUR CODE     ******************/
-    /*********************************************************/
-    /*********************************************************/
-
-    Eigen::VectorXd ns_damping(6);
-    Eigen::MatrixXd J_bar = A_inv*Jv.transpose()*Lambda;
-    ns_damping = (Eigen::MatrixXd::Identity(6,6)-Jv.transpose()*J_bar.transpose())*rio.sensors_.dq_;
-
-    rio.actuators_.force_gc_commanded_ = Gamma  - 15.0*ns_damping;
-
-    // Integrate the dynamics
-    dyn_tao.integrate(rio,dt); iter++; const timespec ts = {0, controlSleepTime}; nanosleep(&ts,NULL);
-
-    if(iter % 1000 == 0)
-    {
-        // std::cout<<"\nPosition error: "<<(x_des-x).transpose(); // <<". Norm: "<<(x_des-x).norm();
-        std::cout << "\n"<< dt*iter<<"\t"<<x.transpose();
-        // std::cout<<"\nJoint torques: "<<rio.actuators_.force_gc_commanded_.transpose() << "\n";
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-void opSpaceOrientationControl()
-{
-  long iter = 0;
-  bool flag = false;
-
-  const Eigen::Vector3d hpos(0,0,0.05); //control position of op-point wrt. hand
-  Eigen::MatrixXd J, Jw, A, A_inv, Lambda, R_init, M;
-  Eigen::Matrix3d R, R_des;
-  Eigen::Vector3d w;
-  Eigen::VectorXd Gamma, g, F;
-  scl::SRigidBodyDyn *rhand = rgcm.rbdyn_tree_.at("end-effector");
-
-
-  std::cout<<"\n\n***************************************************************"
-      <<"\n Starting op space orientation controller..."
-      <<"\n***************************************************************\n";
-  while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
-  {
-    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
-
-    // Jacobians
-    dyn_scl.computeJacobianWithTransforms(J,*rhand,rio.sensors_.q_,hpos);
-
-    // Mass Matrix and its inverse
-    A = rgcm.M_gc_;
-    A_inv = rgcm.M_gc_inv_;
-
-    // Initialize rotation matrices
-    R = Eigen::Matrix3d::Identity(3,3);
-    R_des = Eigen::Matrix3d::Identity(3,3);
-
-    // initial position
-    if(false == flag) {R_init = rhand->T_o_lnk_.rotation(); flag = true; }
-
-    /*********************************************************/
-    /*********************************************************/
-    /*************     YOUR CODE HERE     ********************/
-    /*********************************************************/
-    /*********************************************************/
-
-    // gains    
-    double kp = 2000;
-    double kv = 20;
-
-    // find the task jacobians
-    // Jw = Eigen::MatrixXd::Zero(3,rio.dof_);
-    Jw = J.block(3,0,3,rio.dof_);
-
-    // current orientation and angular velocity
-    // R = Eigen::Matrix3d::Identity(3,3);
-    R = rhand->T_o_lnk_.rotation();
-    w = Jw * rio.sensors_.dq_;
-
-    // desired orientation
-    R_des = Eigen::Matrix3d::Identity(3,3);
-    R_des(0,0) = cos(M_PI/3.0);  R_des(0,1) = 0.0; R_des(0,2) = sin(M_PI/3.0);
-    R_des(1,0) = 0.0;            R_des(1,1) = 1.0; R_des(1,2) = 0.0;
-    R_des(2,0) = -sin(M_PI/3.0); R_des(2,1) = 0.0; R_des(2,2) = cos(M_PI/3.0);
-
-    // angular error vector
-    Eigen::Vector3d d_phi;
-    d_phi = -0.5*(  R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)) );
-    // std::cout<<dt*iter<<"\t"<<d_phi.transpose()<<"\n";
-
-    // Operational space Inertia matrix
-    // Lambda = Eigen::MatrixXd::Identity(3,3);
-    M = J * A_inv * J.transpose();
-    Lambda = M.inverse();
-
-    // Operational space controller force
-    // F = Eigen::Vector3d::Zero();
-    F = -Lambda * (kp * d_phi + kv * w);
-
-
-    // joint space gravity
-    // g << 0,0,0,0,0,0;
-    g = rgcm.force_gc_grav_;
-
-    // joint torques
-    // Gamma = Eigen::VectorXd::Zero(6);
-    Gamma = Jw.transpose()*F - g;
-
-
-    /*********************************************************/
-    /*********************************************************/
-    /*************     END OF YOUR CODE     ******************/
-    /*********************************************************/
-    /*********************************************************/
-
-    Eigen::VectorXd ns_damping(6);
-    Eigen::MatrixXd J_bar = A_inv*Jw.transpose()*Lambda;
-    ns_damping = (Eigen::MatrixXd::Identity(6,6)-Jw.transpose()*J_bar.transpose())*rio.sensors_.dq_;
-
-    rio.actuators_.force_gc_commanded_ = Gamma  - 3.0*ns_damping;
-
-    // Integrate the dynamics
-    dyn_tao.integrate(rio,dt); iter++; const timespec ts = {0, controlSleepTime}; nanosleep(&ts,NULL);
-
-    // if(iter % 10000 == 0)
-    if(iter % 100 == 0)
-    {
-      std::cout<<"\n"<<iter*dt<<"\t" << d_phi.transpose();
-        // std::cout<<"\nangular Position error: "<<d_phi.transpose() <<". Norm: "<<d_phi.norm();
-        // std::cout<<"\nJoint torques: "<<rio.actuators_.force_gc_commanded_.transpose() << "\n";
-        // std::cout<<"rotation matrix:\n"<<R<<"\n";
-        // std::cout<<"desired rotation matrix:\n"<<R_des<<"\n";
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
 void opSpacePositionOrientationControl()
 {
   double tstart, tcurr;
@@ -470,21 +162,27 @@ void opSpacePositionOrientationControl()
   tstart = sutil::CSystemClock::getSysTime(); iter = 0;
 
   scl::SRigidBodyDyn *rhand = rgcm.rbdyn_tree_.at("end-effector");
-  /*********************************************************/
-  /***********************   WRIST      ********************/
-  /*********************************************************/
   scl::SRigidBodyDyn *rwrist = rgcm.rbdyn_tree_.at("link_5");
-  /*********************************************************/
-  /*********************************************************/
-  /*********************************************************/
 
   const Eigen::Vector3d hpos(0,0,0.05); //control position of op-point wrt. hand
-
-  /*********************************************************/
-  /*********************************************************/
-  /*************     YOUR CODE HERE     ********************/
-  /*********************************************************/
-  /*********************************************************/
+  
+  /*******************************/
+  /******* Domi Shared API *******/
+  /*******************************/
+  Domi domi(rgcm, rio, dyn_scl, rhand, rwrist, hpos, true);
+  
+  /*
+  while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running) {
+    domi.mainloop();
+    dyn_tao.integrate(rio,dt); iter++; const timespec ts = {0, controlSleepTime}; nanosleep(&ts,NULL);
+  }
+  */
+  
+  /*******************************/
+  /**** Everything below here ****/
+  /**** should be done in the ****/
+  /**** Domi mainloop methods ****/
+  /*******************************/
 
 
   // Define the matrices and vectors you will need
@@ -496,6 +194,7 @@ void opSpacePositionOrientationControl()
 
   while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
   {
+    domi.mainloop();
     // get current time and compute the model
     tcurr = sutil::CSystemClock::getSysTime();
     dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
@@ -615,14 +314,7 @@ void opSpacePositionOrientationControl()
     {
        std::cout<<"\n"<<iter*dt<<"\t" << d_phi.transpose();
        std::cout<<"\n" << rio.sensors_.q_ << "\n";
-       std::cout<<"\n" << x_init.transpose() << "\n";
     }
-
-    /*********************************************************/
-    /*********************************************************/
-    /*************     END OF YOUR CODE     ******************/
-    /*********************************************************/
-    /*********************************************************/
   }
 }
 

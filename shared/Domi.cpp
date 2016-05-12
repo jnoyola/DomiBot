@@ -1,7 +1,12 @@
 #include "Domi.h"
 
+// For std::cout
 #include <iostream>
 
+// For timer
+#include <sutil/CSystemClock.hpp>
+
+// For popen
 #include <fcntl.h>
 
 Domi::Domi(scl::SGcModel &_rgcm,
@@ -9,9 +14,9 @@ Domi::Domi(scl::SGcModel &_rgcm,
            scl::CDynamicsScl &_dyn_scl,
            scl::SRigidBodyDyn *_rhand,
            scl::SRigidBodyDyn *_rwrist,
-           Eigen::Vector3d &_hpos,
+           const Eigen::Vector3d &_hpos,
            bool _is_simulator) :
-    state(Domi::MOVE_TO_REST),
+    state(Domi::OBSERVATION),
     rgcm(_rgcm),
     rio(_rio),
     dyn_scl(_dyn_scl),
@@ -33,6 +38,30 @@ void Domi::mainloop() {
     case Domi::OBSERVATION:
         observation();
         break;
+    case Domi::GET_ABOVE:
+        get_above();
+        break;
+    case Domi::GET_DEPTH:
+        get_depth();
+        break;
+    case Domi::GET_GRASP:
+        get_grasp();
+        break;
+    case Domi::GET_REVERSE_DEPTH:
+        get_reverse_depth();
+        break;
+    case Domi::PUT_ABOVE:
+        put_above();
+        break;
+    case Domi::PUT_DEPTH:
+        put_depth();
+        break;
+    case Domi::PUT_GRASP:
+        put_grasp();
+        break;
+    case Domi::PUT_REVERSE_DEPTH:
+        put_reverse_depth();
+        break;
     }
 }
 
@@ -43,19 +72,26 @@ void Domi::move_to_rest() {
     x_des(2) = 0;
     R_des;
     
+    control_pos_ori();
+    
     if (!has_error()) {
         state = Domi::REST;
-        return;
+        rest_end = sutil::CSystemClock::getSysTime() + 10;
     }
-    
-    control_pos_ori();
 }
 
 void Domi::rest() {
-    // Move to OBSERVATION state after 10 seconds
+    if (sutil::CSystemClock::getSysTime() >= rest_end) {
+        state = Domi::OBSERVATION;
+        return;
+    }
+    
+    // Hold current position and orientation
+    control_pos_ori();
 }
 
 void Domi::observation() {
+    std::cout<<".";
     if (!py_fp) {
         py_fp = popen("python ../cv_tests/cv.py", "r");
         if (!py_fp) {
@@ -70,6 +106,10 @@ void Domi::observation() {
         fcntl(fd, F_SETFL, flags);
     }
     
+    // Hold current position and orientation
+    control_pos_ori();
+    
+    // Check for python output
     // Assume all output is on one line
     if (fgets(py_out, sizeof(py_out), py_fp)) {
         std::cout<<py_out;
@@ -78,6 +118,38 @@ void Domi::observation() {
         
         state = Domi::GET_ABOVE;
     }
+}
+
+void Domi::get_above() {
+    
+}
+
+void Domi::get_depth() {
+    
+}
+
+void Domi::get_grasp() {
+    
+}
+
+void Domi::get_reverse_depth() {
+    
+}
+
+void Domi::put_above() {
+    
+}
+
+void Domi::put_depth() {
+    
+}
+
+void Domi::put_grasp() {
+    
+}
+
+void Domi::put_reverse_depth() {
+    
 }
 
 void Domi::control_pos_ori() {

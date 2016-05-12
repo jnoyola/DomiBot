@@ -19,7 +19,7 @@ public:
          scl::CDynamicsScl &_dyn_scl,
          scl::SRigidBodyDyn *_rhand,
          scl::SRigidBodyDyn *_rwrist,
-         Eigen::Vector3d &_hpos,
+         const Eigen::Vector3d &_hpos,
          bool is_simulator);
 
     void mainloop();
@@ -46,12 +46,15 @@ private:
     scl::CDynamicsScl &dyn_scl;
     scl::SRigidBodyDyn *rhand;
     scl::SRigidBodyDyn *rwrist;
-    Eigen::Vector3d &hpos;
+    const Eigen::Vector3d &hpos;
     
     bool is_simulator;
     
     Eigen::Vector3d x_des;
     Eigen::Matrix3d R_des;
+    
+    // For timing REST state
+    double rest_end;
     
     // For running python code
     FILE *py_fp;
@@ -60,6 +63,14 @@ private:
     void move_to_rest();
     void rest();
     void observation();
+    void get_above();
+    void get_depth();
+    void get_grasp();
+    void get_reverse_depth();
+    void put_above();
+    void put_depth();
+    void put_grasp();
+    void put_reverse_depth();
     
     void control_pos_ori();
     
