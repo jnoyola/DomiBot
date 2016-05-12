@@ -72,7 +72,7 @@ void Domi::observation() {
     
     // Assume all output is on one line
     if (fgets(py_out, sizeof(py_out), py_fp)) {
-        std::cout<<line;
+        std::cout<<py_out;
     
         // TODO: use output from CV
         
