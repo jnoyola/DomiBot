@@ -188,13 +188,12 @@ void opSpacePositionOrientationControl()
   // Define the matrices and vectors you will need
   Eigen::MatrixXd J_hand, J_wrist, Jhv, Jhw, Jwv, Jww, A, A_inv, Lambda, LambdaO, R_init, M, MO;
   Eigen::Matrix3d R, R_des;
-  Eigen::Vector3d w, x, x_des, x_init, dx;
+  Eigen::Vector3d w, x, x_des, x_init, dx, x_final;
   Eigen::VectorXd Gamma, g, F, FO, q_desired; 
  
 
   while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
   {
-    domi.mainloop();
     // get current time and compute the model
     tcurr = sutil::CSystemClock::getSysTime();
     dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
@@ -233,29 +232,46 @@ void opSpacePositionOrientationControl()
     dx = Jwv * rio.sensors_.dq_;
 
     // desired position
-    // x_des(0) = x_init(0) + sin(tcurr*frequency*2*M_PI)*sin_ampl + 0.1; 
-    // x_des(1) = x_init(1) + cos(tcurr*frequency*2*M_PI)*sin_ampl + 0.5; 
-    // x_des(2) = x_init(2) - 0.5;
+    double t_f = 10.0;
+    x_final(0) = 0.5;
+    x_final(1) = 0.5;
+    x_final(2) = 0.2;
 
-      if (iter*dt < 7.0)
-      {x_des(0) = 0.5; 
-      x_des(1) = 0.5; 
-      x_des(2) = 0.2;}
+    double ti = iter*dt;
+    if (ti > t_f)
+      {ti = t_f;break;}
 
-      else if (iter*dt < 11.0)
-        {x_des(0) = 0.5; 
-         x_des(1) = -0.5; 
-         x_des(2) = 0.2;}
 
-      else if (iter*dt < 15.0)
-        {x_des(0) = -0.5; 
-         x_des(1) = -0.5; 
-         x_des(2) = 0.2;}
+    x_des(0) = x_init(0) + 3.0/t_f*(x_final(0) - x_init(0))*std::pow(ti,2) - (2.0/std::pow(t_f,3))*(x_final(0) - x_init(0))*std::pow(ti,3);
+    x_des(1) = x_init(1) + 3.0/t_f*(x_final(1) - x_init(1))*std::pow(ti,2) - (2.0/std::pow(t_f,3))*(x_final(1) - x_init(1))*std::pow(ti,3);
+    x_des(2) = x_init(2); //Just move in the x-y plane
 
-      else if (iter*dt < 19.0)
-      {x_des(0) = -0.5; 
-       x_des(1) = 0.5; 
-       x_des(2) = 0.2;}
+    std::cout<<"\n"<<x_des.transpose()<<"\t"<<ti<<"\n";
+
+
+    // // x_des(0) = x_init(0) + sin(tcurr*frequency*2*M_PI)*sin_ampl + 0.1; 
+    // // x_des(1) = x_init(1) + cos(tcurr*frequency*2*M_PI)*sin_ampl + 0.5; 
+    // // x_des(2) = x_init(2) - 0.5;
+
+      // if (iter*dt < 7.0)
+      // {x_des(0) = 0.5; 
+      // x_des(1) = 0.5; 
+      // x_des(2) = 0.2;}
+
+      // else if (iter*dt < 11.0)
+      //   {x_des(0) = 0.5; 
+      //    x_des(1) = -0.5; 
+      //    x_des(2) = 0.2;}
+
+      // else if (iter*dt < 15.0)
+      //   {x_des(0) = -0.5; 
+      //    x_des(1) = -0.5; 
+      //    x_des(2) = 0.2;}
+
+      // else if (iter*dt < 19.0)
+      // {x_des(0) = -0.5; 
+      //  x_des(1) = 0.5; 
+      //  x_des(2) = 0.2;}
 
 
 
