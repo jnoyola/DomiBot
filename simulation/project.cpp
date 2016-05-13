@@ -232,7 +232,7 @@ void opSpacePositionOrientationControl()
     dx = Jwv * rio.sensors_.dq_;
 
     // desired position
-    double t_f = 10.0;
+    double t_f = 3.0;
     x_final(0) = 0.5;
     x_final(1) = 0.5;
     x_final(2) = 0.2;
@@ -242,9 +242,9 @@ void opSpacePositionOrientationControl()
       {ti = t_f;break;}
 
 
-    x_des(0) = x_init(0) + 3.0/t_f*(x_final(0) - x_init(0))*std::pow(ti,2) - (2.0/std::pow(t_f,3))*(x_final(0) - x_init(0))*std::pow(ti,3);
-    x_des(1) = x_init(1) + 3.0/t_f*(x_final(1) - x_init(1))*std::pow(ti,2) - (2.0/std::pow(t_f,3))*(x_final(1) - x_init(1))*std::pow(ti,3);
-    x_des(2) = x_init(2); //Just move in the x-y plane
+    x_des(0) = x_init(0) + (3/std::pow(t_f,2))*(x_final(0) - x_init(0))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(0) - x_init(0))*std::pow(ti,3);
+    x_des(1) = x_init(1) + (3/std::pow(t_f,2))*(x_final(1) - x_init(1))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(1) - x_init(1))*std::pow(ti,3);
+    x_des(2) = x_init(2) + (3/std::pow(t_f,2))*(x_final(2) - x_init(2))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(2) - x_init(2))*std::pow(ti,3);
 
     std::cout<<"\n"<<x_des.transpose()<<"\t"<<ti<<"\n";
 
