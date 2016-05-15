@@ -108,7 +108,7 @@ cv_data = [[(3, (431, 197), 0.51914611424652302), (5, (386, 219), -2.73670086730
 cv_ends = [(0, (431, 197), 0.51914611424652302), (5, (386, 219), -2.7367008673047097)]
 n = 7;
 offset = [0.05, 0.05]
-desired_targets(cv_data,cv_ends,n,offset)
-
+[desired_piece, target_pick_up, target_put_down] = desired_targets(cv_data,cv_ends,n,offset)
+print([desired_piece, target_pick_up, target_put_down])
 
 
