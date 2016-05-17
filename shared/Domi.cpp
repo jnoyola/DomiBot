@@ -3,6 +3,12 @@
 // For std::cout
 #include <iostream>
 
+// For strtok_r
+#include <string.h>
+
+// For atof
+#include <cstdlib>
+
 // For timer
 #include <sutil/CSystemClock.hpp>
 
@@ -93,7 +99,7 @@ void Domi::rest() {
 void Domi::observation() {
     std::cout<<".";
     if (!py_fp) {
-        py_fp = popen("python ../cv_tests/cv.py", "r");
+        py_fp = popen("python ../cv/cv.py", "r");
         if (!py_fp) {
             std::cout<<"ERROR with popen\n";
             return;
@@ -112,8 +118,19 @@ void Domi::observation() {
     // Check for python output
     // Assume all output is on one line
     if (fgets(py_out, sizeof(py_out), py_fp)) {
-        std::cout<<py_out;
     
+        char *saveptr;
+        char *domino_end_1 = strtok_r(py_out, ",", &saveptr);
+        char *domino_end_2 = strtok_r(NULL, ",", &saveptr);
+        double x_get = atof(strtok_r(NULL, ",", &saveptr));
+        double y_get = atof(strtok_r(NULL, ",", &saveptr));
+        double ori_get = atof(strtok_r(NULL, ",", &saveptr));
+        double x_put = atof(strtok_r(NULL, ",", &saveptr));
+        double y_put = atof(strtok_r(NULL, ",", &saveptr));
+        double ori_put = atof(strtok_r(NULL, ",", &saveptr));
+        
+        std::cout<<"\ndomino ["<<domino_end_1<<"|"<<domino_end_2<<"] from ("<<x_get<<","<<y_get<<","<<ori_get<<") to ("<<x_put<<","<<y_put<<","<<ori_put<<")\n";
+        
         // TODO: use output from CV
         
         state = Domi::GET_ABOVE;

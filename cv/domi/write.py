@@ -18,7 +18,12 @@ def write_file(img, has_error):
     filepath += ".png"
     cv2.imwrite(filepath, img)
 
-def write_connectors(connectors):
-    for domino in connectors:
-        for pips, pos, ori in domino:
-            print str(pips) + ',' + str(pos[0]) + ',' + str(pos[1]) + ',' + str(ori)
+def write_desired_play(des_domino, des_get, des_put):
+    print str(des_domino[0]) + ',' + \
+          str(des_domino[1]) + ',' + \
+          str(des_get[0][0]) + ',' + \
+          str(des_get[0][1]) + ',' + \
+          str(des_get[1]) + ',' + \
+          str(des_put[0][0]) + ',' + \
+          str(des_put[0][1]) + ',' + \
+          str(des_put[1])

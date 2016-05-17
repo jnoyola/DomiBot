@@ -1,5 +1,5 @@
 import cv2
-from domi import calibration, filters, detectors, draw, write
+from domi import calibration, filters, detectors, strategy, draw, write
 
 # Load camera feed
 #cap = cv2.VideoCapture(0)
@@ -28,6 +28,7 @@ stash_connectors = detectors.all_grids_to_connectors(stash_grids, mask, pip_cont
 game_connectors = detectors.all_grids_to_connectors(game_grids, mask, pip_contours)
 
 # Strategy
+des_domino, des_get, des_put = strategy.desired_targets(stash_connectors, game_connectors[0], size + 0.05)
 
 # Draw
 draw.draw_grids(frame, stash_grids, color=(255,0,0))
@@ -35,10 +36,16 @@ draw.draw_grids(frame, game_grids, color=(0,255,0))
 draw.draw_partitions(frame)
 draw.draw_connectors(frame, stash_connectors)
 draw.draw_connectors(frame, game_connectors)
+draw.draw_pos_ori(frame, des_get)
+draw.draw_pos_ori(frame, des_put, color=(255,0,0))
 
 cv2.imshow('frame', frame)
 has_error = cv2.waitKey(0) == ord('q')
 write.write_file(frame, has_error=has_error)
 
+# Transform
+des_get = calibration.cam_to_world_point(frame, des_get)
+des_put = calibration.cam_to_world_point(frame, des_put)
+
 # Write
-write.write_connectors(stash_connectors)
+write.write_desired_play(des_domino, des_get, des_put)

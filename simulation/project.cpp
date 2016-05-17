@@ -246,8 +246,6 @@ void opSpacePositionOrientationControl()
     x_des(1) = x_init(1) + (3/std::pow(t_f,2))*(x_final(1) - x_init(1))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(1) - x_init(1))*std::pow(ti,3);
     x_des(2) = x_init(2) + (3/std::pow(t_f,2))*(x_final(2) - x_init(2))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(2) - x_init(2))*std::pow(ti,3);
 
-    std::cout<<"\n"<<x_des.transpose()<<"\t"<<ti<<"\n";
-
 
     // // x_des(0) = x_init(0) + sin(tcurr*frequency*2*M_PI)*sin_ampl + 0.1; 
     // // x_des(1) = x_init(1) + cos(tcurr*frequency*2*M_PI)*sin_ampl + 0.5; 

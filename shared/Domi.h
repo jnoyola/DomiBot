@@ -58,7 +58,7 @@ private:
     
     // For running python code
     FILE *py_fp;
-    char py_out[64];
+    char py_out[128];
     
     void move_to_rest();
     void rest();

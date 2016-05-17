@@ -37,3 +37,13 @@ def calibrate_with_corners(corners, should_print=False):
         print "Calibration: using " + str(num_used) + " individual dominoes"
         print "Calibration: short_edge_len = " + str(short_edge_len)
     return short_edge_len
+
+def cam_to_world_point(frame, point):
+    x = point[0][0]
+    y = point[0][1]
+    ori = point[1]
+
+    x = 0 + x * 1 / frame.shape[1]
+    y = 0 + y * 1 / frame.shape[0]
+
+    return ((x, y), ori)
