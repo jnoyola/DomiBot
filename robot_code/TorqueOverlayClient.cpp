@@ -55,13 +55,20 @@ or otherwise, without the prior written consent of KUKA Roboter GmbH.
 #include <scl/dynamics/scl/CDynamicsScl.hpp>
 #include <scl/parser/sclparser/CParserScl.hpp>
 #include <Eigen/Dense>
+
+#include "../DomiBot/shared/Domi.h"
+
 // SCL variables defined globally for ease of use
 scl::SRobotParsed rds;     //Robot data structure....
 scl::SGcModel rgcm;        //Robot data structure with dynamic quantities...
 scl::SRobotIO rio;         //I/O data structure
 scl::CDynamicsScl dyn_scl; //Robot kinematics and dynamics computation object...
 scl::CParserScl p;         //This time, we'll parse the tree from a file...
-scl::SRigidBodyDyn *end_effector;
+scl::SRigidBodyDyn *rhand;
+scl::SRigidBodyDyn *rwrist;
+const Eigen::Vector3d hpos(0,0,0.05);
+
+Domi *domi;
 
 // Print counter
 int print = 0;
@@ -89,7 +96,12 @@ TorqueOverlay::TorqueOverlay()
 	flag = flag && rio.init(rds);             //Set up the I/O data structure
 
 	// Save pointer to the end effector
-	end_effector = rgcm.rbdyn_tree_.at("end-effector");
+	rhand = rgcm.rbdyn_tree_.at("end-effector");
+	rwrist = rgcm.rbdyn_tree_.at("link_5");
+
+	// Set dt (last param) <= 0 because we're not using the simulator!!!
+	domi = new Domi(rgcm, rio, dyn_scl, rhand, rwrist, hpos, -1);
+
 	printf("Done init\n");
 }
 
@@ -120,71 +132,72 @@ double tcurr = 0;
 Eigen::Vector3d x_init;
 void TorqueOverlay::mainloop()
 {
-	// We compute all the transformations and the jacobian of a point on
-	// the end-effector
-	dyn_scl.computeTransformsForAllLinks(rgcm.rbdyn_tree_,rio.sensors_.q_);
-	Eigen::Vector3d hpos(0.0,0.0,0.0);
-	Eigen::MatrixXd J;
-	Eigen::Vector3d x_des;
-	dyn_scl.computeJacobian(J,*end_effector,rio.sensors_.q_,hpos);
+	domi->mainloop();
+	// // We compute all the transformations and the jacobian of a point on
+	// // the end-effector
+	// dyn_scl.computeTransformsForAllLinks(rgcm.rbdyn_tree_,rio.sensors_.q_);
+	// Eigen::Vector3d hpos(0.0,0.0,0.0);
+	// Eigen::MatrixXd J;
+	// Eigen::Vector3d x_des;
+	// dyn_scl.computeJacobian(J,*end_effector,rio.sensors_.q_,hpos);
 
-	// Compute position of end-effector
-	Eigen::Vector3d x(3);
-	x = end_effector->T_o_lnk_*hpos;
+	// // Compute position of end-effector
+	// Eigen::Vector3d x(3);
+	// x = end_effector->T_o_lnk_*hpos;
 
-	// First time initialization, this gets called again if robot leaves
-	// operating mode
-	if(first_time)
-	{
-		x_init = end_effector->T_o_lnk_*hpos;
-		first_time = false;
-	}
+	// // First time initialization, this gets called again if robot leaves
+	// // operating mode
+	// if(first_time)
+	// {
+	// 	x_init = end_effector->T_o_lnk_*hpos;
+	// 	first_time = false;
+	// }
 
-	tcurr = tcurr + 0.002;
-	// radius of circle and frequency
+	// tcurr = tcurr + 0.002;
+	// // radius of circle and frequency
 
-	double ampl = 0.1;
-	double freq = 0.2; 
+	// double ampl = 0.1;
+	// double freq = 0.2; 
 	
-	// Computing the desired trajectory
+	// // Computing the desired trajectory
 
-	x_des(0) = x_init(0) + ampl * sin(tcurr * freq * 2 * 3.14159);
-	x_des(1) = x_init(1) + ampl * cos(tcurr * freq * 2 * 3.14159);
-	x_des(2) = x_init(2) - 0.1;
+	// x_des(0) = x_init(0) + ampl * sin(tcurr * freq * 2 * 3.14159);
+	// x_des(1) = x_init(1) + ampl * cos(tcurr * freq * 2 * 3.14159);
+	// x_des(2) = x_init(2) - 0.1;
 
-	// Compute velocity of end-effector
-	Eigen::Vector3d dx;
-	Eigen::MatrixXd Jv = J.block(0,0,3,LBRState::NUMBER_OF_JOINTS);
-	dx = Jv*rio.sensors_.dq_;
-
-
-	rio.actuators_.force_gc_commanded_ = Jv.transpose() * (800*(x_des-x) - 30*dx);
-	rio.actuators_.force_gc_commanded_ += -2.0*rio.sensors_.dq_;
+	// // Compute velocity of end-effector
+	// Eigen::Vector3d dx;
+	// Eigen::MatrixXd Jv = J.block(0,0,3,LBRState::NUMBER_OF_JOINTS);
+	// dx = Jv*rio.sensors_.dq_;
 
 
-	// Simple joint space control
-	/*
-	Eigen::VectorXd q_init(LBRState::NUMBER_OF_JOINTS);
-	for(int i=0; i < LBRState::NUMBER_OF_JOINTS; i++)
-	{
-		q_init(i) = _init_joint_pos[i];
-	}
-	rio.actuators_.force_gc_commanded_ = 50.0*(q_init-rio.sensors_.q_)-10.0*rio.sensors_.dq_;
-	*/
+	// rio.actuators_.force_gc_commanded_ = Jv.transpose() * (800*(x_des-x) - 30*dx);
+	// rio.actuators_.force_gc_commanded_ += -2.0*rio.sensors_.dq_;
 
-	/*
-	if((++print) >= 200)
-	{
-		print = 0;
-		//std::cout << dt << "\n";
-		std::cout << "-------------------------------\n";
-		//std::cout << new_q.transpose() << "\n";
-		//std::cout << new_dq.transpose() << "\n";
-		std::cout << x_init.transpose() << "\n";
-		std::cout << x.transpose() << "\n";
-		//std::cout << rio.actuators_.force_gc_commanded_.transpose() << "\n";
-	}
-	//*/
+
+	// // Simple joint space control
+	// /*
+	// Eigen::VectorXd q_init(LBRState::NUMBER_OF_JOINTS);
+	// for(int i=0; i < LBRState::NUMBER_OF_JOINTS; i++)
+	// {
+	// 	q_init(i) = _init_joint_pos[i];
+	// }
+	// rio.actuators_.force_gc_commanded_ = 50.0*(q_init-rio.sensors_.q_)-10.0*rio.sensors_.dq_;
+	// */
+
+	// /*
+	// if((++print) >= 200)
+	// {
+	// 	print = 0;
+	// 	//std::cout << dt << "\n";
+	// 	std::cout << "-------------------------------\n";
+	// 	//std::cout << new_q.transpose() << "\n";
+	// 	//std::cout << new_dq.transpose() << "\n";
+	// 	std::cout << x_init.transpose() << "\n";
+	// 	std::cout << x.transpose() << "\n";
+	// 	//std::cout << rio.actuators_.force_gc_commanded_.transpose() << "\n";
+	// }
+	// //*/
 }
 
 

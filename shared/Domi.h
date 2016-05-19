@@ -49,9 +49,9 @@ private:
     scl::SRigidBodyDyn *rwrist;
     const Eigen::Vector3d &hpos;
     
-    Eigen::MatrixXd J_hand, J_wrist, Jhv, Jhw, Jwv, Jww, A, A_inv, Lambda, LambdaO, M, MO, Jwv_bar, N;
+    Eigen::MatrixXd J_hand, J_wrist, Jhv, Jhw, Jwv, A, A_inv, Lambda, LambdaO, M, MO, Jwv_bar, N;
     Eigen::Matrix3d R, R_des;
-    Eigen::Vector3d w, x, x_via, x_des, x_init, dx, d_phi;
+    Eigen::Vector3d w, x, x_via, x_des, x_init, dx, d_phi, g;
     Eigen::VectorXd Gamma, F, FO, q_lim, dq_lim, q_limit_gain, dq_limit_gain, torque_lim;
     
     double kpO, kvO, kp, kv, kq, kdq, kq_lim, kdq_lim;

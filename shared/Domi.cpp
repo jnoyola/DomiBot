@@ -46,7 +46,7 @@ Domi::Domi(scl::SGcModel &_rgcm,
         kp = 150;
         kv = 30;
         kq = 10;
-        kdq = 4;
+        kdq = 15;
         kq_lim = 10;
         kdq_lim = 10;
         torque_lim << 1, 1, 1, 1, 1, 1, 1; //<< 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
@@ -56,10 +56,13 @@ Domi::Domi(scl::SGcModel &_rgcm,
         kp = 0;
         kv = 0;
         kq = 0;
-        kdq = 0;
+        kdq = 15; // Worked well on the robot. Position control should account for the rest.
         kq_lim = 0;
         kdq_lim = 0;
         torque_lim << 1, 1, 1, 1, 1, 1, 1;
+
+        g = Eigen::Vector3d::Zero(3);
+        g(2) = 1.9*9.81;
     }
     
     q_lim << 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 165.0*M_PI/180.0;
@@ -237,6 +240,7 @@ void Domi::control_pos_ori() {
     // Compute your Jacobians
     // hand - control orientation
     dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
+    Jhv = J_hand.block(0,0,3,rio.dof_);
     Jhw = J_hand.block(3,0,3,rio.dof_);
     // wrist - control position
     dyn_scl.computeJacobianWithTransforms(J_wrist,*rwrist,rio.sensors_.q_,hpos);
@@ -313,12 +317,20 @@ void Domi::control_pos_ori() {
         else if (Gamma(i) <= -torque_lim(i))
             Gamma(i) = -torque_lim(i);
     }
+
+    //////////////////////////////////////
+    // FOR NOW, SEND 0 COMMANDED TORQUE //
+    //////////////////////////////////////
+
+    Gamma *= 0;
+    Gamma -= kdq * rio.sensors_.dq_;
     
-    // Apply gravity compensation if we're in the simulator
+    // Apply gravity compensation after torque limits
     if (is_simulator) {
         Gamma -= rgcm.force_gc_grav_;
+    } else {
+        Gamma += Jhv.transpose()*g;
     }
-    
     // Send the torque command to the robot
     rio.actuators_.force_gc_commanded_ = Gamma;
 }
