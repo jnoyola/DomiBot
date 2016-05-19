@@ -49,7 +49,7 @@ Domi::Domi(scl::SGcModel &_rgcm,
         kdq = 4;
         kq_lim = 10;
         kdq_lim = 10;
-        torque_lim << 1, 1, 1, 1, 1, 1, 1;
+        torque_lim << 1, 1, 1, 1, 1, 1, 1; //<< 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
     } else {
         kpO = 0;
         kvO = 0;
