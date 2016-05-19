@@ -206,12 +206,12 @@ void opSpacePositionOrientationControl()
     // Compute your Jacobians
     // Jacobians
     dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
-    Jhv = J_hand.block(0,0,3,rio.dof_);
+    //Jhv = J_hand.block(0,0,3,rio.dof_);
     Jhw = J_hand.block(3,0,3,rio.dof_);
 
     dyn_scl.computeJacobianWithTransforms(J_wrist,*rwrist,rio.sensors_.q_,hpos);
     Jwv = J_wrist.block(0,0,3,rio.dof_);
-    Jww = J_wrist.block(3,0,3,rio.dof_);
+    //Jww = J_wrist.block(3,0,3,rio.dof_);
 
     // Mass Matrix and its inverse    A is the identity
     // A = rgcm.M_gc_;
