@@ -189,7 +189,8 @@ void opSpacePositionOrientationControl()
   Eigen::MatrixXd J_hand, J_wrist, Jhv, Jhw, Jwv, Jww, A, A_inv, Lambda, LambdaO, R_init, M, MO;
   Eigen::Matrix3d R, R_des;
   Eigen::Vector3d w, x, x_des, x_init, dx, x_final;
-  Eigen::VectorXd Gamma, g, F, FO, q_desired; 
+  Eigen::VectorXd Gamma, g, F, FO, q_desired;
+  // Eigen::VectorXd joint_lim, torque_lim; 
  
 
   while(true == scl_chai_glut_interface::CChaiGlobals::getData()->chai_glut_running)
@@ -217,59 +218,56 @@ void opSpacePositionOrientationControl()
     // A_inv = rgcm.M_gc_inv_;
     
     // gains    
-    double kpO = 200;
-    double kvO = 20;
-    double kp = 100;
-    double kv = 30;
+    double kpO = 200;   // 200
+    double kvO = 20;    // 20
+    double kp = 100;    // 100
+    double kv = 30;     // 30
     
-    // position trajectory parameters
-    double sin_ampl = 0.15;
-    double frequency = 0.3;
-
     
     // current position and velocity
     x = rwrist->T_o_lnk_ * hpos;
     dx = Jwv * rio.sensors_.dq_;
 
     // desired position
+    double t_1 = 5.0;
+    double t_2 = 10.0;
+    double t_3 = 15.0;
+    double t_4 = 20.0;
     double t_f = 3.0;
-    x_final(0) = 0.5;
-    x_final(1) = 0.5;
-    x_final(2) = 0.2;
 
     double ti = iter*dt;
-    if (ti > t_f)
-      {ti = t_f;break;}
+    Eigen::Vector3d x_final1, x_final2, x_final3, x_final4;
+    x_final1 = Eigen::VectorXd::Zero(3);
+    x_final1(0) = 0.4;  x_final1(1) = 0.4;  x_final1(2) = 0.2;
+    x_final2 = Eigen::VectorXd::Zero(3);
+    x_final2(0) = -0.4;  x_final2(1) = 0.4;  x_final2(2) = 0.2;
+    x_final3 = Eigen::VectorXd::Zero(3);
+    x_final3(0) = 0.4;  x_final3(1) = 0.4;  x_final3(2) = 0.2;
+    x_final4 = Eigen::VectorXd::Zero(3);
+    x_final4(0) = -0.4;  x_final4(1) = 0.4;  x_final4(2) = 0.2;
+
+    if (ti <= t_1)
+      {t_f = t_1;
+       x_final = x_final1;}
+    else if (ti <= t_2 && ti > t_1)
+      {t_f = t_2;
+       x_final = x_final2;
+       x_init = x_final1;}
+    else if (ti <= t_3 && ti > t_2)
+      {t_f = t_3;
+       x_final = x_final3;
+       x_init = x_final2;}
+    else if (ti <= t_4)
+      {t_f = t_4;
+       x_final = x_final4;
+       x_init = x_final3;}
+    else if (ti > t_4)
+      {ti = t_4; break;}
 
 
     x_des(0) = x_init(0) + (3/std::pow(t_f,2))*(x_final(0) - x_init(0))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(0) - x_init(0))*std::pow(ti,3);
     x_des(1) = x_init(1) + (3/std::pow(t_f,2))*(x_final(1) - x_init(1))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(1) - x_init(1))*std::pow(ti,3);
     x_des(2) = x_init(2) + (3/std::pow(t_f,2))*(x_final(2) - x_init(2))*std::pow(ti,2) - (2/std::pow(t_f,3))*(x_final(2) - x_init(2))*std::pow(ti,3);
-
-
-    // // x_des(0) = x_init(0) + sin(tcurr*frequency*2*M_PI)*sin_ampl + 0.1; 
-    // // x_des(1) = x_init(1) + cos(tcurr*frequency*2*M_PI)*sin_ampl + 0.5; 
-    // // x_des(2) = x_init(2) - 0.5;
-
-      // if (iter*dt < 7.0)
-      // {x_des(0) = 0.5; 
-      // x_des(1) = 0.5; 
-      // x_des(2) = 0.2;}
-
-      // else if (iter*dt < 11.0)
-      //   {x_des(0) = 0.5; 
-      //    x_des(1) = -0.5; 
-      //    x_des(2) = 0.2;}
-
-      // else if (iter*dt < 15.0)
-      //   {x_des(0) = -0.5; 
-      //    x_des(1) = -0.5; 
-      //    x_des(2) = 0.2;}
-
-      // else if (iter*dt < 19.0)
-      // {x_des(0) = -0.5; 
-      //  x_des(1) = 0.5; 
-      //  x_des(2) = 0.2;}
 
 
 
@@ -279,14 +277,54 @@ void opSpacePositionOrientationControl()
     
     // desired orientation
     // Rotation in the y axis 
-    R_des(0,0) = cos(M_PI);  R_des(0,1) = 0.0; R_des(0,2) = sin(M_PI);
-    R_des(1,0) = 0.0;        R_des(1,1) = 1.0; R_des(1,2) = 0.0;
-    R_des(2,0) = -sin(M_PI); R_des(2,1) = 0.0; R_des(2,2) = cos(M_PI);
+    // R_des(0,0) = cos(M_PI);  R_des(0,1) = 0.0; R_des(0,2) = sin(M_PI);
+    // R_des(1,0) = 0.0;        R_des(1,1) = 1.0; R_des(1,2) = 0.0;
+    // R_des(2,0) = -sin(M_PI); R_des(2,1) = 0.0; R_des(2,2) = cos(M_PI);
 
     // Rotation in the x axis 
-    // R_des(0,0) = 1.0; R_des(0,1) = 0.0; R_des(0,2) = 0.0;
-    // R_des(1,0) = 0.0; R_des(1,1) = cos(M_PI); R_des(1,2) = -sin(M_PI);
-    // R_des(2,0) = 0.0; R_des(2,1) = sin(M_PI); R_des(2,2) = cos(M_PI);
+    R_des(0,0) = 1.0; R_des(0,1) = 0.0; R_des(0,2) = 0.0;
+    R_des(1,0) = 0.0; R_des(1,1) = cos(M_PI); R_des(1,2) = -sin(M_PI);
+    R_des(2,0) = 0.0; R_des(2,1) = sin(M_PI); R_des(2,2) = cos(M_PI);
+
+    // Rotation in the z axis 
+    // R_des(0,0) = cos(M_PI);  R_des(0,1) = -sin(M_PI); R_des(0,2) = 0.0;
+    // R_des(1,0) = sin(M_PI);  R_des(1,1) = cos(M_PI);  R_des(1,2) = 0.0;
+    // R_des(2,0) = 0.0;        R_des(2,1) = 0.0;        R_des(2,2) = 1.0;
+
+
+
+    // In simulation, we artificially add hard joint and torque constraints
+    // In real life, we would use a potential function
+
+    Eigen::VectorXd q_lim, dq_lim, q_limit_gain, dq_limit_gain;
+    q_lim = Eigen::VectorXd::Zero(7);
+    dq_lim = Eigen::VectorXd::Zero(7);
+    q_lim << 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 165.0*M_PI/180.0;
+    dq_lim << 98.0*M_PI/180.0, 98.0*M_PI/180.0, 100.0*M_PI/180.0, 130.0*M_PI/180.0, 140.0*M_PI/180.0, 180.0*M_PI/180.0, 180.0*M_PI/180.0;
+    
+    q_limit_gain = Eigen::VectorXd::Zero(7);
+    dq_limit_gain = Eigen::VectorXd::Zero(7);
+
+
+    for (int i = 0; i < 7; i = i + 1)
+      {
+        if (rio.sensors_.q_(i) >= q_lim(i))
+          {q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);}   
+        if (rio.sensors_.q_(i) <= -q_lim(i))
+          {q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i);}   
+           // std::cout<<"\n"<<"joint limit reached";}
+
+        if (rio.sensors_.dq_(i) >= dq_lim(i))
+                // {rio.sensors_.dq_(0) = 166.0;
+          {dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);   }
+            // std::cout<<"\n"<<"torque limit reached";}
+        if (rio.sensors_.dq_(i) <= -dq_lim(i))
+                // {rio.sensors_.dq_(0) = 166.0;
+          {dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);   }
+            // std::cout<<"\n"<<"torque limit reached";}
+           
+      }
+
 
     // angular error vector
     Eigen::Vector3d d_phi;
@@ -315,10 +353,23 @@ void opSpacePositionOrientationControl()
     // ns_damping = (Eigen::MatrixXd::Identity(6,6) - Jhw.transpose() * J_bar.transpose()) * rio.sensors_.dq_;
     rio.actuators_.force_gc_commanded_ = Gamma;   // position + orientation control
 
-    q_desired = Eigen::VectorXd::Zero(6);
-    q_desired << 1.00267,1.26118,-0.482714,0.967511,0.545266,1.02197,0.537638;
+    q_desired = Eigen::VectorXd::Zero(7);
+    // q_desired << 1.00267,1.26118,-0.482714,0.967511,0.545266,1.02197,0.537638;
+    // q_desired << 2.8271,1.34687,-1.04559,1.51003,1.2214,1.08341,1.472;
     // joint space control
-    rio.actuators_.force_gc_commanded_ += 0.0 * (q_desired - rio.sensors_.q_) - 2.0 * rio.sensors_.dq_;  
+    rio.actuators_.force_gc_commanded_ += 0.5 * (q_desired - rio.sensors_.q_) - 4.0 * rio.sensors_.dq_ + 2.0 * q_limit_gain - 2.0 * dq_limit_gain;  
+
+// >>> set hard constraints on torque limits.
+    Eigen::VectorXd torque_lim;
+    torque_lim = Eigen::VectorXd::Zero(7);
+    q_lim << 176.0, 176.0, 110.0, 110.0, 110.0, 40.0, 40.0;
+
+    for (int i = 0; i < 7; i = i + 1)
+      {
+        
+           
+      }
+
 
     // Integrate the dynamics
     dyn_tao.integrate(rio,dt); iter++; const timespec ts = {0, controlSleepTime}; nanosleep(&ts,NULL);
@@ -326,8 +377,12 @@ void opSpacePositionOrientationControl()
     
     if(iter % 1000 == 0)
     {
-       std::cout<<"\n"<<iter*dt<<"\t" << d_phi.transpose();
-       std::cout<<"\n" << rio.sensors_.q_ << "\n";
+       // std::cout<<"\n"<<iter*dt<<"\t" << d_phi.transpose();
+       // std::cout<<"\n" << rio.sensors_.dq_.transpose() << "\n";
+       std::cout<<"\n"<<iter*dt<<"\t"<< d_phi.transpose();
+       std::cout<<"\n"<<iter*dt<<"\t"<< (x_des - x).transpose()<< "\n";
+       std::cout<<"\n"<<iter*dt<<"\t"<< q_limit_gain.transpose()<<"\n";
+       std::cout<<"\n"<<iter*dt<<"\t"<< dq_limit_gain.transpose()<<"\n";
     }
   }
 }
