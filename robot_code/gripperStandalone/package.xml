@@ -1,0 +1,22 @@
+<package>
+  <name>gripperStandalone</name>
+  <description> gripperStandalone </description>
+  <version>2.0.0</version>
+  <maintainer email="khansari@cs.stanford.edu">Mohammad Khansari</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/gripperStandalone</url>
+ 
+  <build_depend> MathLib </build_depend>
+  <build_depend> StdTools </build_depend>
+  <build_depend> RobotLib </build_depend>
+  <build_depend> usefulLibraries </build_depend>  
+  <build_depend> bullet </build_depend>
+  <build_depend> SchunkGripper </build_depend>
+  <build_depend> roscpp </build_depend>
+  <build_depend> message_generation </build_depend>
+  <run_depend> qt4-dev </run_depend>
+  <run_depend> message_runtime </run_depend>
+</package>
+
+

@@ -1,0 +1,13 @@
+<package>
+  <name>SchunkGripper</name>
+  <description>
+     JR3 Force/Torque Sensor
+  </description>
+  <version>2.0.0</version>
+  <maintainer email="khansari@cs.stanford.edu">Mohammad Khansari</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <license>BSD</license>
+</package>
+
+
+
