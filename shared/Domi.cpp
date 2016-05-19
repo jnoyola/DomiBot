@@ -21,16 +21,50 @@ Domi::Domi(scl::SGcModel &_rgcm,
            scl::SRigidBodyDyn *_rhand,
            scl::SRigidBodyDyn *_rwrist,
            const Eigen::Vector3d &_hpos,
-           bool _is_simulator) :
-    state(Domi::OBSERVATION),
-    rgcm(_rgcm),
-    rio(_rio),
-    dyn_scl(_dyn_scl),
-    rhand(_rhand),
-    rwrist(_rwrist),
-    hpos(_hpos),
-    is_simulator(_is_simulator),
-    py_fp(NULL) {}
+           double _dt)
+           :
+           state(Domi::MOVE_TO_REST),
+           rgcm(_rgcm),
+           rio(_rio),
+           dyn_scl(_dyn_scl),
+           rhand(_rhand),
+           rwrist(_rwrist),
+           hpos(_hpos),
+           dt(_dt),
+           iter(0),
+           py_fp(NULL) {
+           
+    is_simulator = (dt > 0);
+    
+    q_lim = Eigen::VectorXd::Zero(7);
+    dq_lim = Eigen::VectorXd::Zero(7);
+    torque_lim = Eigen::VectorXd::Zero(7);
+           
+    if (is_simulator) {
+        kpO = 100;
+        kvO = 10;
+        kp = 150;
+        kv = 30;
+        kq = 10;
+        kdq = 4;
+        kq_lim = 10;
+        kdq_lim = 10;
+        torque_lim << 1, 1, 1, 1, 1, 1, 1;
+    } else {
+        kpO = 0;
+        kvO = 0;
+        kp = 0;
+        kv = 0;
+        kq = 0;
+        kdq = 0;
+        kq_lim = 0;
+        kdq_lim = 0;
+        torque_lim << 1, 1, 1, 1, 1, 1, 1;
+    }
+    
+    q_lim << 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 160.0*M_PI/180.0, 110.0*M_PI/180.0, 165.0*M_PI/180.0;
+    dq_lim << 98.0*M_PI/180.0, 98.0*M_PI/180.0, 100.0*M_PI/180.0, 130.0*M_PI/180.0, 140.0*M_PI/180.0, 180.0*M_PI/180.0, 180.0*M_PI/180.0;
+}
 
 void Domi::mainloop() {
 
@@ -69,25 +103,30 @@ void Domi::mainloop() {
         put_reverse_depth();
         break;
     }
+    
+    ++iter;
 }
 
 void Domi::move_to_rest() {
     // TODO: CHANGE ME
-    x_des(0) = 0;
-    x_des(1) = 0;
-    x_des(2) = 0;
-    R_des;
+//    x_des(0) = 0.000884997;
+//    x_des(1) = -0.605546;
+//    x_des(2) = 0.613931;
+//    R_des(0,0) = 0.0015229; R_des(0,1) = -0.999999;       R_des(0,2) = -0.00577387;
+//    R_des(1,0) = -0.995643; R_des(1,1) = -0.0015701; R_des(1,2) = 0.0932387;
+//    R_des(2,0) = -0.0932395; R_des(2,1) = 0.000432878; R_des(2,2) = -0.995644;
     
     control_pos_ori();
     
-    if (!has_error()) {
-        state = Domi::REST;
-        rest_end = sutil::CSystemClock::getSysTime() + 10;
-    }
+//    if (!has_error()) {
+//        state = Domi::REST;
+//        rest_end = get_time() + 10;
+//    }
 }
 
 void Domi::rest() {
-    if (sutil::CSystemClock::getSysTime() >= rest_end) {
+    if ((is_simulator && iter >= rest_end) ||
+        (!is_simulator && sutil::CSystemClock::getSysTime() >= rest_end)) {
         state = Domi::OBSERVATION;
         return;
     }
@@ -169,49 +208,119 @@ void Domi::put_reverse_depth() {
     
 }
 
+void Domi::set_des_pos_ori_duration(double x, double y, double z, double ori, double duration) {
+    x_des(0) = x;
+    x_des(1) = y;
+    x_des(2) = z;
+    R_des; // = pointing straight down
+    
+    // store ori_des
+    
+    x_init = rhand->T_o_lnk_ * hpos;
+    
+    if (is_simulator) {
+        t_init = iter*dt;
+    } else {
+        t_init = sutil::CSystemClock::getSysTime();
+    }
+    t_dur = duration;
+    t_elap = 0;
+}
+
 void Domi::control_pos_ori() {
-    /*
-	// We compute all the transformations and the jacobian of a point on
-	// the end-effector
-	dyn_scl.computeTransformsForAllLinks(rgcm.rbdyn_tree_,rio.sensors_.q_);
-	Eigen::Vector3d hpos(0.0,0.0,0.0);
-	Eigen::MatrixXd J;
-	Eigen::Vector3d x_des;
-	dyn_scl.computeJacobian(J,*end_effector,rio.sensors_.q_,hpos);
+    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
+    if (iter == 0) {
+        x_des = rwrist->T_o_lnk_ * hpos;
+        R_des = rhand->T_o_lnk_.rotation();
+    }
+    
+    // Compute your Jacobians
+    // hand - control orientation
+    dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
+    Jhw = J_hand.block(3,0,3,rio.dof_);
+    // wrist - control position
+    dyn_scl.computeJacobianWithTransforms(J_wrist,*rwrist,rio.sensors_.q_,hpos);
+    Jwv = J_wrist.block(0,0,3,rio.dof_);
+    
+    // Current position and velocity
+    x = rwrist->T_o_lnk_ * hpos;
+    dx = Jwv * rio.sensors_.dq_;
+    
+    // Trajectory
+    t_elap = get_time() - t_init;
+    x_via(0) = x_init(0) + (3/std::pow(t_dur,2))*(x_des(0) - x_init(0))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(0) - x_init(0))*std::pow(t_elap,3);
+    x_via(1) = x_init(1) + (3/std::pow(t_dur,2))*(x_des(1) - x_init(1))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(1) - x_init(1))*std::pow(t_elap,3);
+    x_via(2) = x_init(2) + (3/std::pow(t_dur,2))*(x_des(2) - x_init(2))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(2) - x_init(2))*std::pow(t_elap,3);
+    
+    // Current orientation and angular velocity
+    R = rhand->T_o_lnk_.rotation();
+    w = Jhw * rio.sensors_.dq_;
+    
+    // Rotation in the x axis 
+//    R_des(0,0) = 1.0; R_des(0,1) = 0.0;       R_des(0,2) = 0.0;
+//    R_des(1,0) = 0.0; R_des(1,1) = cos(M_PI); R_des(1,2) = -sin(M_PI);
+//    R_des(2,0) = 0.0; R_des(2,1) = sin(M_PI); R_des(2,2) = cos(M_PI);
+    
+    // Use a potential function to enforce joint and joint velocity limits
+    q_limit_gain = Eigen::VectorXd::Zero(7);
+    dq_limit_gain = Eigen::VectorXd::Zero(7);
 
-	// Compute position of end-effector
-	Eigen::Vector3d x(3);
-	x = end_effector->T_o_lnk_*hpos;
+    for (int i = 0; i < 7; i = i + 1) {
+        if (rio.sensors_.q_(i) >= q_lim(i)) {
+            q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);
+            std::cout<<"\n"<<"q limit reached";
+        } else if (rio.sensors_.q_(i) <= -q_lim(i)) {
+            q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i);
+            std::cout<<"\n"<<"q limit reached";
+        }
 
-	// First time initialization, this gets called again if robot leaves
-	// operating mode
-	if(first_time)
-	{
-		x_init = end_effector->T_o_lnk_*hpos;
-		first_time = false;
-	}
+        if (rio.sensors_.dq_(i) >= dq_lim(i)) {
+            dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);
+            std::cout<<"\n"<<"dq limit reached";
+        } else if (rio.sensors_.dq_(i) <= -dq_lim(i)) {
+            dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);
+            std::cout<<"\n"<<"dq limit reached";
+        }
+    }
+    
+    // Angular error vector
+    d_phi = -0.5*(R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)) );
 
-	tcurr = tcurr + 0.002;
-	// radius of circle and frequency
+    // Operational space Inertia matrix
+    M = Jwv * Jwv.transpose();  // A is identity!!!
+    Lambda = M.inverse();
+    MO = Jhw * Jhw.transpose();
+    LambdaO = MO.inverse();
 
-	double ampl = 0.1;
-	double freq = 0.2; 
-	
-	// Computing the desired trajectory
+    // Null space damping of wrist position to stop it drooping
+    Jwv_bar = Jwv.transpose()*Lambda;
+    N = Eigen::MatrixXd::Identity(7,7) - Jwv.transpose()*Jwv_bar.transpose();
 
-	x_des(0) = x_init(0) + ampl * sin(tcurr * freq * 2 * 3.14159);
-	x_des(1) = x_init(1) + ampl * cos(tcurr * freq * 2 * 3.14159);
-	x_des(2) = x_init(2) - 0.1;
+    // Operational space controller force
+    F = Lambda * (kp * (x_des - x) - kv * dx);
+    FO = LambdaO * (kpO * (-d_phi) - kvO * w);
+    
+    // Joint torques
+    Gamma = Jwv.transpose() * F  + Jhw.transpose()*FO;
 
-	// Compute velocity of end-effector
-	Eigen::Vector3d dx;
-	Eigen::MatrixXd Jv = J.block(0,0,3,LBRState::NUMBER_OF_JOINTS);
-	dx = Jv*rio.sensors_.dq_;
-
-
-	rio.actuators_.force_gc_commanded_ = Jv.transpose() * (800*(x_des-x) - 30*dx);
-	rio.actuators_.force_gc_commanded_ += -2.0*rio.sensors_.dq_;
-    */
+    // Joint space control
+    Gamma += /*N */ kq * -rio.sensors_.q_ - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain - kdq_lim * dq_limit_gain;
+    
+    // Set hard constraints on torque limits
+    for (int i = 0; i < 7; i = i + 1) {
+        if (Gamma(i) >= torque_lim(i))
+            Gamma(i) = torque_lim(i);
+        else if (Gamma(i) <= -torque_lim(i))
+            Gamma(i) = -torque_lim(i);
+    }
+    
+    // Apply gravity compensation if we're in the simulator
+    if (is_simulator) {
+        Gamma -= rgcm.force_gc_grav_;
+    }
+    
+    // Send the torque command to the robot
+    rio.actuators_.force_gc_commanded_ = Gamma;
 }
 
 bool Domi::has_error(double tol_pos, double tol_ori) {
@@ -232,4 +341,8 @@ bool Domi::has_error(double tol_pos, double tol_ori) {
     }
     
     return false;
+}
+
+inline double Domi::get_time() {
+    return is_simulator ? iter*dt : sutil::CSystemClock::getSysTime();
 }
