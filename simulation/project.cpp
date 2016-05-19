@@ -205,10 +205,11 @@ void opSpacePositionOrientationControl()
     
     // Compute your Jacobians
     // Jacobians
+    // hand - control orientation
     dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
     Jhv = J_hand.block(0,0,3,rio.dof_);
     Jhw = J_hand.block(3,0,3,rio.dof_);
-
+    // wrist - control position
     dyn_scl.computeJacobianWithTransforms(J_wrist,*rwrist,rio.sensors_.q_,hpos);
     Jwv = J_wrist.block(0,0,3,rio.dof_);
     Jww = J_wrist.block(3,0,3,rio.dof_);
@@ -220,8 +221,12 @@ void opSpacePositionOrientationControl()
     // gains    
     double kpO = 200;   // 200
     double kvO = 20;    // 20
-    double kp = 100;    // 100
-    double kv = 30;     // 30
+    double kp = 150;    // 100
+    double kv = 25;     // 30
+    double kq = 15;     // 15
+    double kdq = 4.0;   // 4
+    double kq_lim = 10.0;  // 5
+    double kdq_lim = 10.0; // 5
     
     
     // current position and velocity
@@ -309,19 +314,20 @@ void opSpacePositionOrientationControl()
     for (int i = 0; i < 7; i = i + 1)
       {
         if (rio.sensors_.q_(i) >= q_lim(i))
-          {q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);}   
+          {q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);
+          std::cout<<"\n"<<"q limit reached";}
         if (rio.sensors_.q_(i) <= -q_lim(i))
-          {q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i);}   
-           // std::cout<<"\n"<<"joint limit reached";}
+          {q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i); 
+           std::cout<<"\n"<<"q limit reached";}
 
         if (rio.sensors_.dq_(i) >= dq_lim(i))
                 // {rio.sensors_.dq_(0) = 166.0;
-          {dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);   }
-            // std::cout<<"\n"<<"torque limit reached";}
+          {dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);   
+            std::cout<<"\n"<<"dq limit reached";}
         if (rio.sensors_.dq_(i) <= -dq_lim(i))
                 // {rio.sensors_.dq_(0) = 166.0;
-          {dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);   }
-            // std::cout<<"\n"<<"torque limit reached";}
+          {dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);   
+            std::cout<<"\n"<<"dq limit reached";}
            
       }
 
@@ -340,6 +346,10 @@ void opSpacePositionOrientationControl()
     // joint space gravity
     g = rgcm.force_gc_grav_;
 
+    // null space damping of wrist position to stop it drooping
+    Eigen::MatrixXd Jwv_bar = Jwv.transpose()*Lambda;
+    Eigen::MatrixXd N = Eigen::MatrixXd::Identity(7,7) - Jwv.transpose()*Jwv_bar.transpose();
+
     // Operational space controller force
     F = Lambda * (kp * (x_des - x) - kv * dx);
     FO = LambdaO * (kpO * (-d_phi) - kvO * w);
@@ -357,17 +367,19 @@ void opSpacePositionOrientationControl()
     // q_desired << 1.00267,1.26118,-0.482714,0.967511,0.545266,1.02197,0.537638;
     // q_desired << 2.8271,1.34687,-1.04559,1.51003,1.2214,1.08341,1.472;
     // joint space control
-    rio.actuators_.force_gc_commanded_ += 0.5 * (q_desired - rio.sensors_.q_) - 4.0 * rio.sensors_.dq_ + 2.0 * q_limit_gain - 2.0 * dq_limit_gain;  
+    rio.actuators_.force_gc_commanded_ += N * kq * (q_desired - rio.sensors_.q_) - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain - kdq_lim * dq_limit_gain;  
 
 // >>> set hard constraints on torque limits.
     Eigen::VectorXd torque_lim;
     torque_lim = Eigen::VectorXd::Zero(7);
-    q_lim << 176.0, 176.0, 110.0, 110.0, 110.0, 40.0, 40.0;
+    torque_lim << 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
 
     for (int i = 0; i < 7; i = i + 1)
       {
-        
-           
+        if (rio.actuators_.force_gc_commanded_(i) >= torque_lim(i))
+          rio.actuators_.force_gc_commanded_(i) = torque_lim(i);
+        if (rio.actuators_.force_gc_commanded_(i) <= -torque_lim(i))
+          rio.actuators_.force_gc_commanded_(i) = -torque_lim(i);
       }
 
 
@@ -380,9 +392,10 @@ void opSpacePositionOrientationControl()
        // std::cout<<"\n"<<iter*dt<<"\t" << d_phi.transpose();
        // std::cout<<"\n" << rio.sensors_.dq_.transpose() << "\n";
        std::cout<<"\n"<<iter*dt<<"\t"<< d_phi.transpose();
-       std::cout<<"\n"<<iter*dt<<"\t"<< (x_des - x).transpose()<< "\n";
-       std::cout<<"\n"<<iter*dt<<"\t"<< q_limit_gain.transpose()<<"\n";
-       std::cout<<"\n"<<iter*dt<<"\t"<< dq_limit_gain.transpose()<<"\n";
+       std::cout<<"\n"<<iter*dt<<"\t"<< (x_des - x).transpose();
+       std::cout<<"\n"<<iter*dt<<"\t"<< rio.sensors_.q_.transpose()*180.0/M_PI;
+       std::cout<<"\n"<<iter*dt<<"\t"<< rio.sensors_.dq_.transpose()*180.0/M_PI;
+       std::cout<<"\n"<<iter*dt<<"\t"<< rio.actuators_.force_gc_commanded_.transpose()<<"\n";
     }
   }
 }
