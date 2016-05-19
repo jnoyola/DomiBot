@@ -163,7 +163,7 @@ void opSpacePositionOrientationControl()
 
   scl::SRigidBodyDyn *rhand = rgcm.rbdyn_tree_.at("end-effector");
   scl::SRigidBodyDyn *rwrist = rgcm.rbdyn_tree_.at("link_5");
-
+  rio.sensors_.q_<< 90.08*M_PI/180, -31.10*M_PI/180, 0.01*M_PI/180, -61.57*M_PI/180, -0.03*M_PI/180, 92.68*M_PI/180, -0.01*M_PI/180;
   const Eigen::Vector3d hpos(0,0,0.05); //control position of op-point wrt. hand
   
   /*******************************/
@@ -219,14 +219,14 @@ void opSpacePositionOrientationControl()
     // A_inv = rgcm.M_gc_inv_;
     
     // gains    
-    double kpO = 200;   // 200
-    double kvO = 20;    // 20
-    double kp = 150;    // 100
-    double kv = 25;     // 30
+    double kpO = 50;   // 200
+    double kvO = 10;    // 20
+    double kp = 120;    // 100
+    double kv = 30;     // 30
     double kq = 15;     // 15
     double kdq = 4.0;   // 4
-    double kq_lim = 10.0;  // 5
-    double kdq_lim = 10.0; // 5
+    double kq_lim = 20.0;  // 5
+    double kdq_lim = 20.0; // 5
     
     
     // current position and velocity
@@ -243,13 +243,13 @@ void opSpacePositionOrientationControl()
     double ti = iter*dt;
     Eigen::Vector3d x_final1, x_final2, x_final3, x_final4;
     x_final1 = Eigen::VectorXd::Zero(3);
-    x_final1(0) = 0.4;  x_final1(1) = 0.4;  x_final1(2) = 0.2;
+    x_final1(0) = 0.4;  x_final1(1) = -0.4;  x_final1(2) = 0.2;
     x_final2 = Eigen::VectorXd::Zero(3);
-    x_final2(0) = -0.4;  x_final2(1) = 0.4;  x_final2(2) = 0.2;
+    x_final2(0) = 0.0;  x_final2(1) = -0.4;  x_final2(2) = 0.2;
     x_final3 = Eigen::VectorXd::Zero(3);
-    x_final3(0) = 0.4;  x_final3(1) = 0.4;  x_final3(2) = 0.2;
+    x_final3(0) = -0.4;  x_final3(1) = -0.4;  x_final3(2) = 0.2;
     x_final4 = Eigen::VectorXd::Zero(3);
-    x_final4(0) = -0.4;  x_final4(1) = 0.4;  x_final4(2) = 0.2;
+    x_final4(0) = 0.0;  x_final4(1) = -0.4;  x_final4(2) = 0.2;
 
     if (ti <= t_1)
       {t_f = t_1;
@@ -314,22 +314,37 @@ void opSpacePositionOrientationControl()
     for (int i = 0; i < 7; i = i + 1)
       {
         if (rio.sensors_.q_(i) >= q_lim(i))
-          {q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);
-          std::cout<<"\n"<<"q limit reached";}
+          {q_limit_gain(i) =  q_lim(i) -  rio.sensors_.q_(i);}
+          // std::cout<<"\n"<<"q limit reached";}
         if (rio.sensors_.q_(i) <= -q_lim(i))
-          {q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i); 
-           std::cout<<"\n"<<"q limit reached";}
+          {q_limit_gain(i) =  -q_lim(i) -  rio.sensors_.q_(i);} 
+           // std::cout<<"\n"<<"q limit reached";}
 
         if (rio.sensors_.dq_(i) >= dq_lim(i))
                 // {rio.sensors_.dq_(0) = 166.0;
-          {dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);   
-            std::cout<<"\n"<<"dq limit reached";}
+          {dq_limit_gain(i) =  dq_lim(i) -  rio.sensors_.dq_(i);   }
+            // std::cout<<"\n"<<"dq limit reached";}
         if (rio.sensors_.dq_(i) <= -dq_lim(i))
                 // {rio.sensors_.dq_(0) = 166.0;
-          {dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);   
-            std::cout<<"\n"<<"dq limit reached";}
+          {dq_limit_gain(i) =  -dq_lim(i) -  rio.sensors_.dq_(i);   }
+            // std::cout<<"\n"<<"dq limit reached";}
            
       }
+
+
+
+        for (int i = 0; i < 7; i = i + 1)
+      {
+        if (rio.sensors_.q_(i) >= q_lim(i) + 10.0)
+          std::cout<<"\n"<<"q limit reached"<<"\t"<<i;
+        if (rio.sensors_.q_(i) <= -q_lim(i) -10.0) 
+           std::cout<<"\n"<<"q limit reached"<<"\t"<<i;
+
+        if (rio.sensors_.dq_(i) >= dq_lim(i))
+            std::cout<<"\n"<<"dq limit reached"<<"\t"<<i;
+        if (rio.sensors_.dq_(i) <= -dq_lim(i))
+            std::cout<<"\n"<<"dq limit reached"<<"\t"<<i;
+      }  
 
 
     // angular error vector
