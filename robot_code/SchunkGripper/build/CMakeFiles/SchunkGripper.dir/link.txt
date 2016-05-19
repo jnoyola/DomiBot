@@ -1,0 +1,2 @@
+/usr/bin/ar cq libSchunkGripper.a  CMakeFiles/SchunkGripper.dir/src/SchunkGripper.cpp.o
+/usr/bin/ranlib libSchunkGripper.a

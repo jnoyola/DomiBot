@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -std=c++11    CMakeFiles/Project.dir/GripperMain.cpp.o  -o Project -rdynamic -lQtOpenGL -lQtGui -lQtCore /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/SchunkGripper/build/libSchunkGripper.a -lrlhal 
