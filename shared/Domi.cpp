@@ -118,6 +118,10 @@ void Domi::move_to_rest() {
 //    R_des(1,0) = -0.995643; R_des(1,1) = -0.0015701; R_des(1,2) = 0.0932387;
 //    R_des(2,0) = -0.0932395; R_des(2,1) = 0.000432878; R_des(2,2) = -0.995644;
 
+    x_des(0) = 0;
+    x_des(1) = -0.6;
+    x_des(3) = 0.6;
+
     control_pos_ori();
     
 //    if (!has_error()) {
