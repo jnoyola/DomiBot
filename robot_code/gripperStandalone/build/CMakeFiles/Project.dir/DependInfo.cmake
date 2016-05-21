@@ -4,7 +4,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/GripperMain.cpp" "/home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles/Project.dir/GripperMain.cpp.o"
+  "/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/GripperMain.cpp" "/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/Project.dir/GripperMain.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 

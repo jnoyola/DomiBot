@@ -15,15 +15,15 @@
 // For popen
 #include <fcntl.h>
 
-Domi::Domi(scl::SGcModel &_rgcm,
-           scl::SRobotIO &_rio,
-           scl::CDynamicsScl &_dyn_scl,
-           scl::SRigidBodyDyn *_rhand,
-           scl::SRigidBodyDyn *_rwrist,
+Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dynamic quantities 
+           scl::SRobotIO &_rio,                 // I/O data structure
+           scl::CDynamicsScl &_dyn_scl,         // Robot Kinematics and dynamics computation object
+           scl::SRigidBodyDyn *_rhand,          // Orientation (last link)
+           scl::SRigidBodyDyn *_rwrist,         // Position     (second to last link)
            const Eigen::Vector3d &_hpos,
            double _dt)
            :
-           state(Domi::MOVE_TO_REST),
+           state(Domi::GET_ABOVE),
            rgcm(_rgcm),
            rio(_rio),
            dyn_scl(_dyn_scl),
@@ -41,26 +41,25 @@ Domi::Domi(scl::SGcModel &_rgcm,
     torque_lim = Eigen::VectorXd::Zero(7);
            
     if (is_simulator) {
-        kpO = 100;
-        kvO = 10;
-        kp = 150;
-        kv = 30;
-        kq = 10;
-        kdq = 15;
-        kq_lim = 10;
-        kdq_lim = 10;
+        kpO = 100;      // Orientation Proportional Gain
+        kvO = 10;       // Orientation Differential Gain
+        kp = 150;       // Position Proportional Gain
+        kv = 30;        // Position Differential Gain
+        kq = 10;        // Joint Porportional Gain
+        kdq = 15;       // Jonint differential q_limit_gain
+        kq_lim = 10;    // Joint limit proportional Gain
+        kdq_lim = 10;   // Joint limit differential Gain
         torque_lim << 1, 1, 1, 1, 1, 1, 1; //<< 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
     } else {
-        kpO = 0;
+        kpO = 150;
         kvO = 0;
-        kp = 0;
-        kv = 0;
+        kp = 360;   // Worked well with 360
+        kv = 28;    // Worked well with 28
         kq = 0;
-        kdq = 15; // Worked well on the robot. Position control should account for the rest.
-        kq_lim = 0;
-        kdq_lim = 0;
-        torque_lim << 1, 1, 1, 1, 1, 1, 1;
-
+        kdq = 15; // Worked well with 15 on the robot. Position control should account for the rest.
+        kq_lim = 10;
+        kdq_lim = 10;
+        torque_lim = Eigen::VectorXd::Ones(7) * 20;
         g = Eigen::Vector3d::Zero(3);
         g(2) = 1.9*9.81;
     }
@@ -118,7 +117,7 @@ void Domi::move_to_rest() {
 //    R_des(0,0) = 0.0015229; R_des(0,1) = -0.999999;       R_des(0,2) = -0.00577387;
 //    R_des(1,0) = -0.995643; R_des(1,1) = -0.0015701; R_des(1,2) = 0.0932387;
 //    R_des(2,0) = -0.0932395; R_des(2,1) = 0.000432878; R_des(2,2) = -0.995644;
-    
+
     control_pos_ori();
     
 //    if (!has_error()) {
@@ -180,15 +179,30 @@ void Domi::observation() {
 }
 
 void Domi::get_above() {
-    
+
+    if (iter == 0) {
+        set_des_pos_ori_duration(0, -0.7, 0.5, 0, 10);
+    }
+
+    control_pos_ori();
+
+    if (!has_error(0.005, 0.001)) {
+        state = Domi::GET_DEPTH;
+        set_des_pos_ori_duration(0, -0.7, 0.3, 0, 10);
+   }
 }
 
 void Domi::get_depth() {
-    
+    control_pos_ori();
+
+    if (!has_error(0.005, 0.001)) {
+        state = Domi::GET_GRASP;
+        set_des_pos_ori_duration(0, -0.7, 0.5, 0, 10);
+   }
 }
 
 void Domi::get_grasp() {
-    
+    control_pos_ori();
 }
 
 void Domi::get_reverse_depth() {
@@ -215,26 +229,23 @@ void Domi::set_des_pos_ori_duration(double x, double y, double z, double ori, do
     x_des(0) = x;
     x_des(1) = y;
     x_des(2) = z;
-    R_des; // = pointing straight down
-    
-    // store ori_des
-    
-    x_init = rhand->T_o_lnk_ * hpos;
-    
-    if (is_simulator) {
-        t_init = iter*dt;
-    } else {
-        t_init = sutil::CSystemClock::getSysTime();
-    }
+    R_des(0,0) = 0;  R_des(0,1) = -1; R_des(0,2) = 0;
+    R_des(1,0) = -1; R_des(1,1) = 0;  R_des(1,2) = 0;
+    R_des(2,0) = 0;  R_des(2,1) = 0;  R_des(2,2) = -1; // = pointing straight down
+
+    //TODO: multiply by z rotation as a function of desired ori
+
+    t_init = get_time();
     t_dur = duration;
     t_elap = 0;
 }
 
 void Domi::control_pos_ori() {
     dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
-    if (iter == 0) {
-        x_des = rwrist->T_o_lnk_ * hpos;
-        R_des = rhand->T_o_lnk_.rotation();
+
+    if (t_elap == 0) {
+        // We just started a new trajectory. Get x_init
+        x_init = rwrist->T_o_lnk_ * hpos;
     }
     
     // Compute your Jacobians
@@ -251,11 +262,15 @@ void Domi::control_pos_ori() {
     dx = Jwv * rio.sensors_.dq_;
     
     // Trajectory
-    t_elap = get_time() - t_init;
-    x_via(0) = x_init(0) + (3/std::pow(t_dur,2))*(x_des(0) - x_init(0))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(0) - x_init(0))*std::pow(t_elap,3);
-    x_via(1) = x_init(1) + (3/std::pow(t_dur,2))*(x_des(1) - x_init(1))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(1) - x_init(1))*std::pow(t_elap,3);
-    x_via(2) = x_init(2) + (3/std::pow(t_dur,2))*(x_des(2) - x_init(2))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(2) - x_init(2))*std::pow(t_elap,3);
-    
+    if (t_dur == 0) {
+        x_via = x_des;
+    } else {
+        t_elap = std::min(get_time() - t_init, t_dur);
+        x_via(0) = x_init(0) + (3/std::pow(t_dur,2))*(x_des(0) - x_init(0))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(0) - x_init(0))*std::pow(t_elap,3);
+        x_via(1) = x_init(1) + (3/std::pow(t_dur,2))*(x_des(1) - x_init(1))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(1) - x_init(1))*std::pow(t_elap,3);
+        x_via(2) = x_init(2) + (3/std::pow(t_dur,2))*(x_des(2) - x_init(2))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(2) - x_init(2))*std::pow(t_elap,3);
+    }
+
     // Current orientation and angular velocity
     R = rhand->T_o_lnk_.rotation();
     w = Jhw * rio.sensors_.dq_;
@@ -301,29 +316,40 @@ void Domi::control_pos_ori() {
     N = Eigen::MatrixXd::Identity(7,7) - Jwv.transpose()*Jwv_bar.transpose();
 
     // Operational space controller force
-    F = Lambda * (kp * (x_des - x) - kv * dx);
-    FO = LambdaO * (kpO * (-d_phi) - kvO * w);
+
+    F = Lambda * (kp * (x_via - x) - kv * dx);
+    FO = LambdaO * (kpO * (-d_phi) - kvO * w);      // coupling effects of position controller with orientation
     
     // Joint torques
-    Gamma = Jwv.transpose() * F  + Jhw.transpose()*FO;
+    Gamma = Jwv.transpose() * F; 
+    Gamma(5) = 0;                                   // set 2nd last joint position control command = 0 then apply orientation control
+    Gamma +=  Jhw.transpose()*FO;
 
     // Joint space control
-    Gamma += /*N */ kq * -rio.sensors_.q_ - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain - kdq_lim * dq_limit_gain;
+    Gamma += /*N */ kq * - rio.sensors_.q_ - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain + kdq_lim * dq_limit_gain;
     
     // Set hard constraints on torque limits
     for (int i = 0; i < 7; i = i + 1) {
-        if (Gamma(i) >= torque_lim(i))
+        if (Gamma(i) >= torque_lim(i)) {
             Gamma(i) = torque_lim(i);
-        else if (Gamma(i) <= -torque_lim(i))
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+        else if (Gamma(i) <= -torque_lim(i)) {
             Gamma(i) = -torque_lim(i);
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+    }
+    if (iter % 1000 == 0){
+        std::cout<<"\n"<< Gamma.transpose();
+        Eigen::Vector3d x_err = (rwrist->T_o_lnk_ * hpos) - x_des;
+        std::cout<<"\n"<<"Position Error:\t"<< x_err.transpose();
+        std::cout<<"\n"<<"Angular Error: \t"<<d_phi.transpose();
+        std::cout<<"\n"<<"Position:      \t"<<x.transpose();
+        std::cout<<"\n";
     }
 
-    //////////////////////////////////////
-    // FOR NOW, SEND 0 COMMANDED TORQUE //
-    //////////////////////////////////////
-
-    Gamma *= 0;
-    Gamma -= kdq * rio.sensors_.dq_;
+    // Gamma *= 0;
+    // Gamma -= kdq * rio.sensors_.dq_;
     
     // Apply gravity compensation after torque limits
     if (is_simulator) {
@@ -331,6 +357,8 @@ void Domi::control_pos_ori() {
     } else {
         Gamma += Jhv.transpose()*g;
     }
+
+
     // Send the torque command to the robot
     rio.actuators_.force_gc_commanded_ = Gamma;
 }

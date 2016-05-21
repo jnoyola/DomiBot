@@ -3,7 +3,7 @@
 
 CMakeFiles/Project.dir/GripperMain.cpp.o
  ../../SchunkGripper/include/SchunkGripper.h
- /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/GripperMain.cpp
+ /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/GripperMain.cpp
  /usr/include/qt4/Qt3Support/q3cstring.h
  /usr/include/qt4/QtCore/QElapsedTimer
  /usr/include/qt4/QtCore/QThread
