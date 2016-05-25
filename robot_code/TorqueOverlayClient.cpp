@@ -127,9 +127,6 @@ TorqueOverlay::TorqueOverlay()
 // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 
-bool first_time = true;
-double tcurr = 0;
-Eigen::Vector3d x_init;
 void TorqueOverlay::mainloop()
 {
 	domi->mainloop();
@@ -219,6 +216,8 @@ void TorqueOverlay::mainloop()
 //////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+bool first_time = true;
+
 TorqueOverlay::~TorqueOverlay()
 {
 }
@@ -299,7 +298,7 @@ void TorqueOverlay::command()
 	if(first_time)
 	{
 		rio.sensors_.q_ = new_q;
-		// This gets changed to false in mainloop
+		first_time = false;
 	}
 
 	// Compute raw velocity and do filtering
@@ -313,7 +312,6 @@ void TorqueOverlay::command()
 	// State is now new_q and new_dq, update simulator
 	rio.sensors_.q_ = new_q;
 	rio.sensors_.dq_ = new_dq;
-
 	mainloop();
 
   // Check for correct ClientCommandMode.

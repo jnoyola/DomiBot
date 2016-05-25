@@ -1,0 +1,2 @@
+z position of the table is .28 (if you command z_des = 0.28, end of the gripper presses against the table w/ low velocity, high force) Hence we need extra padding
+z_depth = .28 + thickness of "blanket/padding"
