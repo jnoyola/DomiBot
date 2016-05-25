@@ -14,6 +14,12 @@
 
 // For popen
 #include <fcntl.h>
+#include <QThread>
+
+// Gripper
+#include <chrono>
+#include <thread>
+using namespace std;
 
 Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dynamic quantities 
            scl::SRobotIO &_rio,                 // I/O data structure
@@ -23,7 +29,7 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
            const Eigen::Vector3d &_hpos,
            double _dt)
            :
-           state(Domi::GET_ABOVE),
+           state(Domi::MOVE_TO_REST),
            rgcm(_rgcm),
            rio(_rio),
            dyn_scl(_dyn_scl),
@@ -32,13 +38,21 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
            hpos(_hpos),
            dt(_dt),
            iter(0),
-           py_fp(NULL) {
+           py_fp(NULL),
+           x_rest(-0.47),
+           y_rest(-0.57),
+           z_above(0.4),
+           z_depth(0.31) {
            
     is_simulator = (dt > 0);
     
     q_lim = Eigen::VectorXd::Zero(7);
     dq_lim = Eigen::VectorXd::Zero(7);
     torque_lim = Eigen::VectorXd::Zero(7);
+
+    // Initializing the Gripper
+    schunkGripper = new SchunkGripper();
+    schunkGripper->start(QThread::TimeCriticalPriority);
            
     if (is_simulator) {
         kpO = 100;      // Orientation Proportional Gain
@@ -50,9 +64,10 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
         kq_lim = 10;    // Joint limit proportional Gain
         kdq_lim = 10;   // Joint limit differential Gain
         torque_lim << 1, 1, 1, 1, 1, 1, 1; //<< 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
-    } else {
-        kpO = 150;
-        kvO = 0;
+    }
+    else {
+        kpO = 225;
+        kvO = 3;
         kp = 360;   // Worked well with 360
         kv = 28;    // Worked well with 28
         kq = 0;
@@ -110,37 +125,34 @@ void Domi::mainloop() {
 }
 
 void Domi::move_to_rest() {
-    // TODO: CHANGE ME
-//    x_des(0) = 0.000884997;
-//    x_des(1) = -0.605546;
-//    x_des(2) = 0.613931;
-//    R_des(0,0) = 0.0015229; R_des(0,1) = -0.999999;       R_des(0,2) = -0.00577387;
-//    R_des(1,0) = -0.995643; R_des(1,1) = -0.0015701; R_des(1,2) = 0.0932387;
-//    R_des(2,0) = -0.0932395; R_des(2,1) = 0.000432878; R_des(2,2) = -0.995644;
+
+    if (iter == 0) {
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+    }
 
     control_pos_ori();
     
-//    if (!has_error()) {
-//        state = Domi::REST;
-//        rest_end = get_time() + 10;
-//    }
+   if (!has_error()) {
+        state = Domi::REST;
+        rest_end = get_time() + 10;
+        std::cout<<"\nMOVE_TO_REST -> REST\n";
+   }
 }
 
 void Domi::rest() {
-    if ((is_simulator && iter >= rest_end) ||
-        (!is_simulator && sutil::CSystemClock::getSysTime() >= rest_end)) {
-        state = Domi::OBSERVATION;
-        return;
-    }
-    
     // Hold current position and orientation
     control_pos_ori();
+
+    if (get_time() >= rest_end) {
+        state = Domi::OBSERVATION;
+        std::cout<<"\nREST -> OBSERVATION\n";
+    }
 }
 
 void Domi::observation() {
     std::cout<<".";
     if (!py_fp) {
-        py_fp = popen("python ../cv/cv.py", "r");
+        py_fp = popen("python DomiBot/cv/cv.py", "r");
         if (!py_fp) {
             std::cout<<"ERROR with popen\n";
             return;
@@ -163,67 +175,131 @@ void Domi::observation() {
         char *saveptr;
         char *domino_end_1 = strtok_r(py_out, ",", &saveptr);
         char *domino_end_2 = strtok_r(NULL, ",", &saveptr);
-        double x_get = atof(strtok_r(NULL, ",", &saveptr));
-        double y_get = atof(strtok_r(NULL, ",", &saveptr));
-        double ori_get = atof(strtok_r(NULL, ",", &saveptr));
-        double x_put = atof(strtok_r(NULL, ",", &saveptr));
-        double y_put = atof(strtok_r(NULL, ",", &saveptr));
-        double ori_put = atof(strtok_r(NULL, ",", &saveptr));
-        
+        x_get = atof(strtok_r(NULL, ",", &saveptr));
+        y_get = atof(strtok_r(NULL, ",", &saveptr));
+        ori_get = atof(strtok_r(NULL, ",", &saveptr));
+        x_put = atof(strtok_r(NULL, ",", &saveptr));
+        y_put = atof(strtok_r(NULL, ",", &saveptr));
+        ori_put = atof(strtok_r(NULL, ",", &saveptr));
+
         std::cout<<"\ndomino ["<<domino_end_1<<"|"<<domino_end_2<<"] from ("<<x_get<<","<<y_get<<","<<ori_get<<") to ("<<x_put<<","<<y_put<<","<<ori_put<<")\n";
         
-        // TODO: use output from CV
-        
-        state = Domi::GET_ABOVE;
+        // x_get = 0.27;
+        // y_get = -0.516;
+        // ori_get = -1.97;
+        // x_put = 0.15;
+        // y_put = -0.608;
+        // ori_put = 0;
+
+        pclose(py_fp);
+        py_fp = NULL;
+
+        if (x_get == -1) {
+            // No more moves. Go back to rest.
+            state = Domi::MOVE_TO_REST;
+            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+            std::cout<<"\nOBSERVATION -> MOVE_TO_REST\n";
+        } else {
+            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
+            state = Domi::GET_ABOVE;
+            std::cout<<"\nOBSERVATION -> GET_ABOVE\n";
+        }
     }
 }
 
 void Domi::get_above() {
 
-    if (iter == 0) {
-        set_des_pos_ori_duration(0, -0.7, 0.5, 0, 10);
-    }
-
     control_pos_ori();
 
-    if (!has_error(0.005, 0.001)) {
+    if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
         state = Domi::GET_DEPTH;
-        set_des_pos_ori_duration(0, -0.7, 0.3, 0, 10);
-   }
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 5);
+        std::cout<<"\nGET_ABOVE -> GET_DEPTH\n";
+    }
 }
 
 void Domi::get_depth() {
+
     control_pos_ori();
 
-    if (!has_error(0.005, 0.001)) {
+    if (!has_error(0.007, 0.01)) {
         state = Domi::GET_GRASP;
-        set_des_pos_ori_duration(0, -0.7, 0.5, 0, 10);
-   }
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 5);
+	    rest_end = get_time() + 2;
+        std::cout<<"\nGET_DEPTH -> GET_GRASP\n";
+    }
 }
 
 void Domi::get_grasp() {
+
     control_pos_ori();
+    schunkGripper->SetDesiredPosition(35, 0, 100);
+
+    if (get_time() >= rest_end) {
+        state = Domi::GET_REVERSE_DEPTH;
+        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
+        std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
+    }
 }
 
 void Domi::get_reverse_depth() {
-    
+
+    control_pos_ori();
+
+    if (!has_error(0.01, 0.01)) {
+        state = Domi::PUT_ABOVE;
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 5);
+        rest_end = get_time() + 2;
+        std::cout<<"\nGET_REVERSE_DEPTH -> PUT_ABOVE\n";
+   }
 }
 
 void Domi::put_above() {
-    
+
+    control_pos_ori();
+
+    if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
+        state = Domi::PUT_DEPTH;
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 5);
+        std::cout<<"\nPUT_ABOVE -> PUT_DEPTH\n";
+    }
 }
 
 void Domi::put_depth() {
-    
+
+    control_pos_ori();
+
+    if (!has_error(0.007, 0.01)) {
+        state = Domi::PUT_GRASP;
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 5);
+        rest_end = get_time() + 2;
+        std::cout<<"\nPUT_DEPTH -> PUT_GRASP\n";
+    }
 }
 
 void Domi::put_grasp() {
-    
+
+    control_pos_ori();
+    schunkGripper->SetDesiredPosition(50, 0, 100);
+
+    if (get_time() >= rest_end) {
+        state = Domi::PUT_REVERSE_DEPTH;
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 5);
+        std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
+    }
 }
 
 void Domi::put_reverse_depth() {
-    
+
+    control_pos_ori();
+
+    if (!has_error(0.01, 0.01)) {
+        state = Domi::MOVE_TO_REST;
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+        std::cout<<"\nPUT_REVERSE_DEPTH -> MOVE_TO_REST\n";
+   }
 }
+
 
 void Domi::set_des_pos_ori_duration(double x, double y, double z, double ori, double duration) {
     x_des(0) = x;
@@ -233,7 +309,26 @@ void Domi::set_des_pos_ori_duration(double x, double y, double z, double ori, do
     R_des(1,0) = -1; R_des(1,1) = 0;  R_des(1,2) = 0;
     R_des(2,0) = 0;  R_des(2,1) = 0;  R_des(2,2) = -1; // = pointing straight down
 
-    //TODO: multiply by z rotation as a function of desired ori
+    // Setting the desired angle for joint 7
+
+    ori_des = -ori;
+
+    // Keeping it inside the range
+
+    if (ori_des > M_PI){
+        ori_des -= 2*M_PI;
+    }
+    else if (ori_des < -M_PI){
+        ori_des += 2*M_PI;
+    }
+
+    if (ori_des > 174.0f * M_PI / 180.0f){
+        ori_des = 174.0f * M_PI / 180.0f;
+    }
+    else if (ori_des < -174.0f * M_PI / 180.0f){
+        ori_des = -174.0f * M_PI / 180.0f;
+    }
+
 
     t_init = get_time();
     t_dur = duration;
@@ -243,9 +338,15 @@ void Domi::set_des_pos_ori_duration(double x, double y, double z, double ori, do
 void Domi::control_pos_ori() {
     dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
 
+    // Current position and orientation
+    x = rwrist->T_o_lnk_ * hpos;
+    R = rhand->T_o_lnk_.rotation();
+    ori_cur = get_z_rot();
+
     if (t_elap == 0) {
         // We just started a new trajectory. Get x_init
-        x_init = rwrist->T_o_lnk_ * hpos;
+        x_init = x;
+        ori_init = ori_cur;
     }
     
     // Compute your Jacobians
@@ -253,26 +354,29 @@ void Domi::control_pos_ori() {
     dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
     Jhv = J_hand.block(0,0,3,rio.dof_);
     Jhw = J_hand.block(3,0,3,rio.dof_);
+
     // wrist - control position
     dyn_scl.computeJacobianWithTransforms(J_wrist,*rwrist,rio.sensors_.q_,hpos);
     Jwv = J_wrist.block(0,0,3,rio.dof_);
     
-    // Current position and velocity
-    x = rwrist->T_o_lnk_ * hpos;
+    // Current velocity
     dx = Jwv * rio.sensors_.dq_;
     
     // Trajectory
     if (t_dur == 0) {
         x_via = x_des;
+        ori_via = ori_des;
     } else {
         t_elap = std::min(get_time() - t_init, t_dur);
         x_via(0) = x_init(0) + (3/std::pow(t_dur,2))*(x_des(0) - x_init(0))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(0) - x_init(0))*std::pow(t_elap,3);
         x_via(1) = x_init(1) + (3/std::pow(t_dur,2))*(x_des(1) - x_init(1))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(1) - x_init(1))*std::pow(t_elap,3);
-        x_via(2) = x_init(2) + (3/std::pow(t_dur,2))*(x_des(2) - x_init(2))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(2) - x_init(2))*std::pow(t_elap,3);
+        x_via(2) = x_init(2) + (3/std::pow(t_dur,2))*(x_des(2) - x_init(2))*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(x_des(2) - x_init(2))*std::pow(t_elap,3);   
+
+        // Joint 7 trajectory generation
+        ori_via = ori_init + (3/std::pow(t_dur,2))*(ori_des - ori_init)*std::pow(t_elap,2) - (2/std::pow(t_dur,3))*(ori_des - ori_init)*std::pow(t_elap,3);     
     }
 
-    // Current orientation and angular velocity
-    R = rhand->T_o_lnk_.rotation();
+    // Current angular velocity
     w = Jhw * rio.sensors_.dq_;
     
     // Rotation in the x axis 
@@ -304,6 +408,7 @@ void Domi::control_pos_ori() {
     
     // Angular error vector
     d_phi = -0.5*(R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)) );
+    d_phi(2) = 0;
 
     // Operational space Inertia matrix
     M = Jwv * Jwv.transpose();  // A is identity!!!
@@ -316,14 +421,19 @@ void Domi::control_pos_ori() {
     N = Eigen::MatrixXd::Identity(7,7) - Jwv.transpose()*Jwv_bar.transpose();
 
     // Operational space controller force
-
     F = Lambda * (kp * (x_via - x) - kv * dx);
     FO = LambdaO * (kpO * (-d_phi) - kvO * w);      // coupling effects of position controller with orientation
-    
+
     // Joint torques
     Gamma = Jwv.transpose() * F; 
     Gamma(5) = 0;                                   // set 2nd last joint position control command = 0 then apply orientation control
-    Gamma +=  Jhw.transpose()*FO;
+    Gamma += Jhw.transpose()*FO;
+
+
+    // Setting up the control for the last joint
+    if (state == Domi::GET_ABOVE || state == Domi::PUT_ABOVE) {
+        Gamma(6) = kpO * (ori_via - ori_cur) - kvO * rio.sensors_.dq_(6);
+    }
 
     // Joint space control
     Gamma += /*N */ kq * - rio.sensors_.q_ - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain + kdq_lim * dq_limit_gain;
@@ -342,9 +452,11 @@ void Domi::control_pos_ori() {
     if (iter % 1000 == 0){
         std::cout<<"\n"<< Gamma.transpose();
         Eigen::Vector3d x_err = (rwrist->T_o_lnk_ * hpos) - x_des;
+        std::cout<<"\n"<<"Via Point:     \t"<< x_via.transpose();
         std::cout<<"\n"<<"Position Error:\t"<< x_err.transpose();
         std::cout<<"\n"<<"Angular Error: \t"<<d_phi.transpose();
         std::cout<<"\n"<<"Position:      \t"<<x.transpose();
+        std::cout<<"\n"<<"Angle:      \t"<<ori_cur;
         std::cout<<"\n";
     }
 
@@ -363,6 +475,18 @@ void Domi::control_pos_ori() {
     rio.actuators_.force_gc_commanded_ = Gamma;
 }
 
+double Domi::get_z_rot() {
+    // Extract z angle from rotation matrix. Assume R is approximately a rotation about the z axis.
+    double ori = std::asin(R(1,1));
+    if (R(0,1) > 0) {
+        ori = M_PI - ori;
+    }
+    if (ori > M_PI) {
+        ori -= 2*M_PI;
+    }
+    return ori;
+}
+
 bool Domi::has_error(double tol_pos, double tol_ori) {
     
     Eigen::Vector3d x_err = (rwrist->T_o_lnk_ * hpos) - x_des;
@@ -374,15 +498,93 @@ bool Domi::has_error(double tol_pos, double tol_ori) {
     
     Eigen::Matrix3d R = rhand->T_o_lnk_.rotation();
     Eigen::Vector3d d_phi = -0.5*(R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)));
-    if (std::abs(d_phi(0)) > tol_ori ||
-        std::abs(d_phi(1)) > tol_ori ||
-        std::abs(d_phi(2)) > tol_ori) {
+    if (std::pow(d_phi(0),2) + std::pow(d_phi(1),2) > tol_ori)  {
         return true;
     }
     
     return false;
 }
 
+bool Domi::has_ori_error(double tol) {
+    return std::abs(get_z_rot() - ori_des) > tol;
+}
+
 inline double Domi::get_time() {
     return is_simulator ? iter*dt : sutil::CSystemClock::getSysTime();
+}
+
+void Domi::compliant_control() {
+    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
+
+    if (iter == 0) {
+        schunkGripper->SetDesiredPosition(50, 0, 100);
+        R_des(0,0) = 0;  R_des(0,1) = -1; R_des(0,2) = 0;
+        R_des(1,0) = -1; R_des(1,1) = 0;  R_des(1,2) = 0;
+        R_des(2,0) = 0;  R_des(2,1) = 0;  R_des(2,2) = -1;
+    }
+
+    // Current position and orientation
+    x = rwrist->T_o_lnk_ * hpos;
+    R = rhand->T_o_lnk_.rotation();
+    ori_cur = get_z_rot();
+
+    // Compute your Jacobians
+    // hand - control orientation
+    dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
+    Jhv = J_hand.block(0,0,3,rio.dof_);
+    Jhw = J_hand.block(3,0,3,rio.dof_);
+
+    // Current angular velocity
+    w = Jhw * rio.sensors_.dq_;
+    
+    // Angular error vector
+    d_phi = -0.5*(R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)) );
+    d_phi(2) = 0;
+
+    // Operational space Inertia matrix
+    MO = Jhw * Jhw.transpose();
+    LambdaO = MO.inverse();
+
+    // Operational space controller force
+    FO = LambdaO * (kpO * (-d_phi) - kvO * w);      // coupling effects of position controller with orientation
+
+    // Joint torques
+    Gamma = Jhw.transpose()*FO;
+
+    // Joint space control
+    Gamma += /*N */ kq * - rio.sensors_.q_ - kdq * rio.sensors_.dq_;
+    
+    // Set hard constraints on torque limits
+    for (int i = 0; i < 7; i = i + 1) {
+        if (Gamma(i) >= torque_lim(i)) {
+            Gamma(i) = torque_lim(i);
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+        else if (Gamma(i) <= -torque_lim(i)) {
+            Gamma(i) = -torque_lim(i);
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+    }
+    if (iter % 1000 == 0){
+        std::cout<<"\n"<< Gamma.transpose();
+        std::cout<<"\n"<<"Position:      \t"<<x.transpose();
+        std::cout<<"\n"<<"Angle:      \t"<<ori_cur;
+        std::cout<<"\n";
+    }
+
+    // Gamma *= 0;
+    // Gamma -= kdq * rio.sensors_.dq_;
+    
+    // Apply gravity compensation after torque limits
+    if (is_simulator) {
+        Gamma -= rgcm.force_gc_grav_;
+    } else {
+        Gamma += Jhv.transpose()*g;
+    }
+
+
+    // Send the torque command to the robot
+    rio.actuators_.force_gc_commanded_ = Gamma;
+
+    ++iter;
 }

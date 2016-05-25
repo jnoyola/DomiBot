@@ -4,10 +4,11 @@
 #include <scl/DataTypes.hpp>
 #include <scl/data_structs/SGcModel.hpp>
 #include <scl/dynamics/scl/CDynamicsScl.hpp>
-
 #include <Eigen/Dense>
-
 #include <stdio.h>
+
+// For Gripper
+#include "SchunkGripper.h"
 
 class Domi
 {
@@ -24,6 +25,10 @@ public:
          double _dt);
 
     void mainloop();
+
+
+
+    void compliant_control();
     
 private:
 
@@ -54,10 +59,12 @@ private:
     Eigen::Vector3d w, x, x_via, x_des, x_init, dx, d_phi, g;
     Eigen::VectorXd Gamma, F, FO, q_lim, dq_lim, q_limit_gain, dq_limit_gain, torque_lim;
     
-    double kpO, kvO, kp, kv, kq, kdq, kq_lim, kdq_lim;
+    double kpO, kvO, kp, kv, kq, kdq, kq_lim, kdq_lim, ori_init, ori_des, ori_via, ori_cur;
     
     double t_init, t_dur, t_elap;
     
+    SchunkGripper *schunkGripper; // Gripper object
+
     long iter;
     double dt;
     bool is_simulator;
@@ -68,6 +75,10 @@ private:
     
     // For timing REST state
     double rest_end;
+
+    // Domino position and orientation
+    double x_get, y_get, ori_get, x_put, y_put, ori_put;
+    const double x_rest, y_rest, z_above, z_depth;
     
     void move_to_rest();
     void rest();
@@ -84,9 +95,13 @@ private:
     void set_des_pos_ori_duration(double x, double y, double z, double ori, double duration);
     
     void control_pos_ori();
+
+    double get_z_rot();
     
     bool has_error(double tol_pos = 0.01,
                    double tol_ori = 0.01);
+
+    bool has_ori_error(double tol = 0.02);
     
     double get_time();
 };

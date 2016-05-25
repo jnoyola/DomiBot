@@ -8,19 +8,20 @@ def img_to_contours(img):
     pips = []
     edges = []
     mask = np.zeros(img.shape, dtype=img.dtype)
+    margin = 5
     
     for i, contour in enumerate(contours):
     
         # Filter based on length and position of contour
         l = len(contour)
-        if l < 20:
+        if l < 10:
             pips.append(contour)
         else:
             is_border = False
             for point in contour:
                 x = point[0][0]
                 y = point[0][1]
-                if x < 10 or x > img.shape[1] - 10 or y < 10 or y > img.shape[0] - 10:
+                if x < margin or x > img.shape[1] - margin or y < margin or y > img.shape[0] - margin:
                     is_border = True
                     break
             if not is_border:
@@ -72,7 +73,7 @@ def contour_point_to_angle(contour, i, k=1):
 
     return angle
 
-def contour_points_to_corners(contour, k=1, radius=10):
+def contour_points_to_corners(contour, k=1, radius=8):
 
     # First find all candidate corners according to the
     # angles between nearby points

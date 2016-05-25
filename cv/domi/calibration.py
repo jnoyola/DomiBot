@@ -43,7 +43,7 @@ def cam_to_world_point(frame, point):
     y = point[0][1]
     ori = point[1]
 
-    x = 0 + x * 1 / frame.shape[1]
-    y = 0 + y * 1 / frame.shape[0]
+    x = -0.2 + x * (0.35 + 0.2) / frame.shape[1] + y * (0.2 - 0.183) / (frame.shape[0] * 0.322/0.397)
+    y = -0.45 + x * (0.45 - 0.4) / frame.shape[1] + y * (-0.773 + 0.45) / (frame.shape[0] * 0.322/0.397)
 
     return ((x, y), ori)

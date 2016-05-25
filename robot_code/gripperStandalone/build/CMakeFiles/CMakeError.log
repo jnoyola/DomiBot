@@ -1,19 +1,19 @@
 Determining if the Q_WS_WIN exist failed with the following output:
 Change Dir: /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp
 
-Run Build Command:/usr/bin/make "cmTryCompileExec4083214068/fast"
-/usr/bin/make -f CMakeFiles/cmTryCompileExec4083214068.dir/build.make CMakeFiles/cmTryCompileExec4083214068.dir/build
+Run Build Command:/usr/bin/make "cmTryCompileExec1896499589/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1896499589.dir/build.make CMakeFiles/cmTryCompileExec1896499589.dir/build
 make[1]: Entering directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
 /usr/bin/cmake -E cmake_progress_report /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CMakeFiles 1
-Building CXX object CMakeFiles/cmTryCompileExec4083214068.dir/CheckSymbolExists.cxx.o
-/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec4083214068.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Building CXX object CMakeFiles/cmTryCompileExec1896499589.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec1896499589.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_WIN’ was not declared in this scope
    return ((int*)(&Q_WS_WIN))[argc];
                    ^
-make[1]: *** [CMakeFiles/cmTryCompileExec4083214068.dir/CheckSymbolExists.cxx.o] Error 1
+make[1]: *** [CMakeFiles/cmTryCompileExec1896499589.dir/CheckSymbolExists.cxx.o] Error 1
 make[1]: Leaving directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
-make: *** [cmTryCompileExec4083214068/fast] Error 2
+make: *** [cmTryCompileExec1896499589/fast] Error 2
 
 File /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
 /* */
@@ -33,19 +33,19 @@ int main(int argc, char** argv)
 Determining if the Q_WS_QWS exist failed with the following output:
 Change Dir: /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp
 
-Run Build Command:/usr/bin/make "cmTryCompileExec1623808404/fast"
-/usr/bin/make -f CMakeFiles/cmTryCompileExec1623808404.dir/build.make CMakeFiles/cmTryCompileExec1623808404.dir/build
+Run Build Command:/usr/bin/make "cmTryCompileExec2428978984/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2428978984.dir/build.make CMakeFiles/cmTryCompileExec2428978984.dir/build
 make[1]: Entering directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
 /usr/bin/cmake -E cmake_progress_report /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CMakeFiles 1
-Building CXX object CMakeFiles/cmTryCompileExec1623808404.dir/CheckSymbolExists.cxx.o
-/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec1623808404.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Building CXX object CMakeFiles/cmTryCompileExec2428978984.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec2428978984.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_QWS’ was not declared in this scope
    return ((int*)(&Q_WS_QWS))[argc];
                    ^
-make[1]: *** [CMakeFiles/cmTryCompileExec1623808404.dir/CheckSymbolExists.cxx.o] Error 1
+make[1]: *** [CMakeFiles/cmTryCompileExec2428978984.dir/CheckSymbolExists.cxx.o] Error 1
 make[1]: Leaving directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
-make: *** [cmTryCompileExec1623808404/fast] Error 2
+make: *** [cmTryCompileExec2428978984/fast] Error 2
 
 File /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
 /* */
@@ -65,19 +65,19 @@ int main(int argc, char** argv)
 Determining if the Q_WS_MAC exist failed with the following output:
 Change Dir: /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp
 
-Run Build Command:/usr/bin/make "cmTryCompileExec1720811659/fast"
-/usr/bin/make -f CMakeFiles/cmTryCompileExec1720811659.dir/build.make CMakeFiles/cmTryCompileExec1720811659.dir/build
+Run Build Command:/usr/bin/make "cmTryCompileExec2601904418/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2601904418.dir/build.make CMakeFiles/cmTryCompileExec2601904418.dir/build
 make[1]: Entering directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
 /usr/bin/cmake -E cmake_progress_report /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CMakeFiles 1
-Building CXX object CMakeFiles/cmTryCompileExec1720811659.dir/CheckSymbolExists.cxx.o
-/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec1720811659.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+Building CXX object CMakeFiles/cmTryCompileExec2601904418.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec2601904418.dir/CheckSymbolExists.cxx.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
 /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_MAC’ was not declared in this scope
    return ((int*)(&Q_WS_MAC))[argc];
                    ^
-make[1]: *** [CMakeFiles/cmTryCompileExec1720811659.dir/CheckSymbolExists.cxx.o] Error 1
+make[1]: *** [CMakeFiles/cmTryCompileExec2601904418.dir/CheckSymbolExists.cxx.o] Error 1
 make[1]: Leaving directory `/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp'
-make: *** [cmTryCompileExec1720811659/fast] Error 2
+make: *** [cmTryCompileExec2601904418/fast] Error 2
 
 File /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
 /* */
