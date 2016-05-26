@@ -34,11 +34,14 @@ RM = /usr/bin/cmake -E remove -f
 # Escaping for special characters.
 EQUALS = =
 
+# The program to use to edit the cache.
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
+
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone
+CMAKE_SOURCE_DIR = /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build
+CMAKE_BINARY_DIR = /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/Project.dir/depend.make
@@ -51,17 +54,17 @@ include CMakeFiles/Project.dir/flags.make
 
 CMakeFiles/Project.dir/GripperMain.cpp.o: CMakeFiles/Project.dir/flags.make
 CMakeFiles/Project.dir/GripperMain.cpp.o: ../GripperMain.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/Project.dir/GripperMain.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/Project.dir/GripperMain.cpp.o -c /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/GripperMain.cpp
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/Project.dir/GripperMain.cpp.o -c /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/GripperMain.cpp
 
 CMakeFiles/Project.dir/GripperMain.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Project.dir/GripperMain.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/GripperMain.cpp > CMakeFiles/Project.dir/GripperMain.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/GripperMain.cpp > CMakeFiles/Project.dir/GripperMain.cpp.i
 
 CMakeFiles/Project.dir/GripperMain.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Project.dir/GripperMain.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/GripperMain.cpp -o CMakeFiles/Project.dir/GripperMain.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/GripperMain.cpp -o CMakeFiles/Project.dir/GripperMain.cpp.s
 
 CMakeFiles/Project.dir/GripperMain.cpp.o.requires:
 .PHONY : CMakeFiles/Project.dir/GripperMain.cpp.o.requires
@@ -84,7 +87,7 @@ Project: CMakeFiles/Project.dir/build.make
 Project: /usr/lib/x86_64-linux-gnu/libQtOpenGL.so
 Project: /usr/lib/x86_64-linux-gnu/libQtGui.so
 Project: /usr/lib/x86_64-linux-gnu/libQtCore.so
-Project: /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/SchunkGripper/build/libSchunkGripper.a
+Project: /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/SchunkGripper/build/libSchunkGripper.a
 Project: CMakeFiles/Project.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --red --bold "Linking CXX executable Project"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Project.dir/link.txt --verbose=$(VERBOSE)
@@ -101,6 +104,6 @@ CMakeFiles/Project.dir/clean:
 .PHONY : CMakeFiles/Project.dir/clean
 
 CMakeFiles/Project.dir/depend:
-	cd /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles/Project.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/Project.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/Project.dir/depend
 

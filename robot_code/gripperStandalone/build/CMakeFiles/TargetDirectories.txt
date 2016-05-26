@@ -1,1 +1,1 @@
-/home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles/Project.dir
+/home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles/Project.dir

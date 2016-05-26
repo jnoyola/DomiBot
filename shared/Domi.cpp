@@ -39,8 +39,10 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
            dt(_dt),
            iter(0),
            py_fp(NULL),
+           x_rest(-0.47),
+           y_rest(-0.57),
            z_above(0.4),
-           z_depth(0.305) {
+           z_depth(0.31) {
            
     is_simulator = (dt > 0);
     
@@ -123,23 +125,16 @@ void Domi::mainloop() {
 }
 
 void Domi::move_to_rest() {
-    // TODO: CHANGE ME
-//    x_des(0) = 0.000884997;
-//    x_des(1) = -0.605546;
-//    x_des(2) = 0.613931;
-//    R_des(0,0) = 0.0015229; R_des(0,1) = -0.999999;       R_des(0,2) = -0.00577387;
-//    R_des(1,0) = -0.995643; R_des(1,1) = -0.0015701; R_des(1,2) = 0.0932387;
-//    R_des(2,0) = -0.0932395; R_des(2,1) = 0.000432878; R_des(2,2) = -0.995644;
 
     if (iter == 0) {
-        set_des_pos_ori_duration(0, -0.6, 0.6, 0, 5);
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
     }
 
     control_pos_ori();
     
    if (!has_error()) {
         state = Domi::REST;
-        rest_end = get_time() + 2;
+        rest_end = get_time() + 10;
         std::cout<<"\nMOVE_TO_REST -> REST\n";
    }
 }
@@ -189,9 +184,26 @@ void Domi::observation() {
 
         std::cout<<"\ndomino ["<<domino_end_1<<"|"<<domino_end_2<<"] from ("<<x_get<<","<<y_get<<","<<ori_get<<") to ("<<x_put<<","<<y_put<<","<<ori_put<<")\n";
         
-        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
-        state = Domi::GET_ABOVE;
-        std::cout<<"\nOBSERVATION -> GET_ABOVE\n";
+        // x_get = 0.27;
+        // y_get = -0.516;
+        // ori_get = -1.97;
+        // x_put = 0.15;
+        // y_put = -0.608;
+        // ori_put = 0;
+
+        pclose(py_fp);
+        py_fp = NULL;
+
+        if (x_get == -1) {
+            // No more moves. Go back to rest.
+            state = Domi::MOVE_TO_REST;
+            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+            std::cout<<"\nOBSERVATION -> MOVE_TO_REST\n";
+        } else {
+            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
+            state = Domi::GET_ABOVE;
+            std::cout<<"\nOBSERVATION -> GET_ABOVE\n";
+        }
     }
 }
 
@@ -280,6 +292,12 @@ void Domi::put_grasp() {
 void Domi::put_reverse_depth() {
 
     control_pos_ori();
+
+    if (!has_error(0.01, 0.01)) {
+        state = Domi::MOVE_TO_REST;
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+        std::cout<<"\nPUT_REVERSE_DEPTH -> MOVE_TO_REST\n";
+   }
 }
 
 
@@ -493,4 +511,80 @@ bool Domi::has_ori_error(double tol) {
 
 inline double Domi::get_time() {
     return is_simulator ? iter*dt : sutil::CSystemClock::getSysTime();
+}
+
+void Domi::compliant_control() {
+    dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
+
+    if (iter == 0) {
+        schunkGripper->SetDesiredPosition(50, 0, 100);
+        R_des(0,0) = 0;  R_des(0,1) = -1; R_des(0,2) = 0;
+        R_des(1,0) = -1; R_des(1,1) = 0;  R_des(1,2) = 0;
+        R_des(2,0) = 0;  R_des(2,1) = 0;  R_des(2,2) = -1;
+    }
+
+    // Current position and orientation
+    x = rwrist->T_o_lnk_ * hpos;
+    R = rhand->T_o_lnk_.rotation();
+    ori_cur = get_z_rot();
+
+    // Compute your Jacobians
+    // hand - control orientation
+    dyn_scl.computeJacobianWithTransforms(J_hand,*rhand,rio.sensors_.q_,hpos);
+    Jhv = J_hand.block(0,0,3,rio.dof_);
+    Jhw = J_hand.block(3,0,3,rio.dof_);
+
+    // Current angular velocity
+    w = Jhw * rio.sensors_.dq_;
+    
+    // Angular error vector
+    d_phi = -0.5*(R.col(0).cross(R_des.col(0)) + R.col(1).cross(R_des.col(1)) + R.col(2).cross(R_des.col(2)) );
+    d_phi(2) = 0;
+
+    // Operational space Inertia matrix
+    MO = Jhw * Jhw.transpose();
+    LambdaO = MO.inverse();
+
+    // Operational space controller force
+    FO = LambdaO * (kpO * (-d_phi) - kvO * w);      // coupling effects of position controller with orientation
+
+    // Joint torques
+    Gamma = Jhw.transpose()*FO;
+
+    // Joint space control
+    Gamma += /*N */ kq * - rio.sensors_.q_ - kdq * rio.sensors_.dq_;
+    
+    // Set hard constraints on torque limits
+    for (int i = 0; i < 7; i = i + 1) {
+        if (Gamma(i) >= torque_lim(i)) {
+            Gamma(i) = torque_lim(i);
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+        else if (Gamma(i) <= -torque_lim(i)) {
+            Gamma(i) = -torque_lim(i);
+            // std::cout<<"\n"<<"torque limit reached";
+        }
+    }
+    if (iter % 1000 == 0){
+        std::cout<<"\n"<< Gamma.transpose();
+        std::cout<<"\n"<<"Position:      \t"<<x.transpose();
+        std::cout<<"\n"<<"Angle:      \t"<<ori_cur;
+        std::cout<<"\n";
+    }
+
+    // Gamma *= 0;
+    // Gamma -= kdq * rio.sensors_.dq_;
+    
+    // Apply gravity compensation after torque limits
+    if (is_simulator) {
+        Gamma -= rgcm.force_gc_grav_;
+    } else {
+        Gamma += Jhv.transpose()*g;
+    }
+
+
+    // Send the torque command to the robot
+    rio.actuators_.force_gc_commanded_ = Gamma;
+
+    ++iter;
 }

@@ -46,11 +46,14 @@ RM = /usr/bin/cmake -E remove -f
 # Escaping for special characters.
 EQUALS = =
 
+# The program to use to edit the cache.
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
+
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone
+CMAKE_SOURCE_DIR = /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build
+CMAKE_BINARY_DIR = /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build
 
 #=============================================================================
 # Target rules for target CMakeFiles/Project.dir
@@ -59,7 +62,7 @@ CMAKE_BINARY_DIR = /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/g
 CMakeFiles/Project.dir/all:
 	$(MAKE) -f CMakeFiles/Project.dir/build.make CMakeFiles/Project.dir/depend
 	$(MAKE) -f CMakeFiles/Project.dir/build.make CMakeFiles/Project.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles  1
 	@echo "Built target Project"
 .PHONY : CMakeFiles/Project.dir/all
 
@@ -69,9 +72,9 @@ all: CMakeFiles/Project.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Project.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles 1
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/Project.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/castella/Documents/scl-manips-v2.git/tutorial/DomiBot/gripperStandalone/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/cs225a/projects/dominoes/iiwa_fri/DomiBot/robot_code/gripperStandalone/build/CMakeFiles 0
 .PHONY : CMakeFiles/Project.dir/rule
 
 # Convenience name for target.

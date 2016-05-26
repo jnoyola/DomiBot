@@ -63,6 +63,11 @@ def desired_targets(cv_data, cv_ends, offset):
         poss_dom_to_pick_up.append([end_train2,poss_ind[ind_pick_up]])  # best candidate for end 2
 
     V_ends = [V1, V2]; # value of end 1 and end 2
+
+    # See if there are no playable dominoes
+    if V1 == 0 and V2 == 0:
+        return ((-1,-1), ((-1,-1), -1), ((-1, -1), -1))
+
     (V,ind_end_to_play) = max((v,i) for i,v in enumerate(V_ends)) # pick end with greater value
     piece_to_play = poss_dom_to_pick_up[ind_end_to_play]; # pick the domino from the possible list with the greater value
     
@@ -89,13 +94,18 @@ def desired_targets(cv_data, cv_ends, offset):
     x_desired = float(cv_data[ind_desired_dom][ind_next_play_end][1][0] + cv_data[ind_desired_dom][ind_contact_end][1][0])/2.0
     y_desired = float(cv_data[ind_desired_dom][ind_next_play_end][1][1] + cv_data[ind_desired_dom][ind_contact_end][1][1])/2.0
     pickup_desired_position = (x_desired, y_desired)
-    target_pick_up = (pickup_desired_position, pickup_desired_orientation)
     
     # put down
     putdown_desired_orientation = cv_ends[ind_end_to_play][2]
-    x_desired = cv_ends[ind_end_to_play][1][0] + offset * np.cos(putdown_desired_orientation)
-    y_desired = cv_ends[ind_end_to_play][1][1] + offset * np.sin(putdown_desired_orientation)
+    x_desired = cv_ends[ind_end_to_play][1][0] + offset * np.cos(-putdown_desired_orientation)
+    y_desired = cv_ends[ind_end_to_play][1][1] + offset * np.sin(-putdown_desired_orientation)
     putdown_desired_position = (x_desired, y_desired)
+
+    if abs(putdown_desired_orientation) > 165 * np.pi / 180:
+        pickup_desired_orientation -= np.pi
+        putdown_desired_orientation -= np.pi
+
+    target_pick_up = (pickup_desired_position, pickup_desired_orientation)
     target_put_down = (putdown_desired_position, putdown_desired_orientation)
     
     

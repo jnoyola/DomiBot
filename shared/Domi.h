@@ -25,6 +25,10 @@ public:
          double _dt);
 
     void mainloop();
+
+
+
+    void compliant_control();
     
 private:
 
@@ -74,7 +78,7 @@ private:
 
     // Domino position and orientation
     double x_get, y_get, ori_get, x_put, y_put, ori_put;
-    const double z_above, z_depth;
+    const double x_rest, y_rest, z_above, z_depth;
     
     void move_to_rest();
     void rest();
