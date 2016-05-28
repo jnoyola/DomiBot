@@ -28,24 +28,24 @@ stash_connectors = detectors.all_grids_to_connectors(stash_grids, mask, pip_cont
 game_connectors = detectors.all_grids_to_connectors(game_grids, mask, pip_contours)
 
 # # Strategy
-des_domino, des_get, des_put = strategy.desired_targets(stash_connectors, game_connectors[0], size + 0.05)
+des_domino, des_get, des_put = strategy.desired_targets(stash_connectors, game_connectors[0], size + 1.75)
 
-# # Draw
-draw.draw_corners(frame, stash_corners)
-draw.draw_corners(frame, game_corners, color=(255,0,0))
-draw.draw_grids(frame, stash_grids, color=(255,0,0))
-draw.draw_grids(frame, game_grids, color=(0,255,0))
-draw.draw_partitions(frame)
-draw.draw_connectors(frame, stash_connectors)
-draw.draw_connectors(frame, game_connectors)
+# Draw
+# draw.draw_corners(frame, stash_corners)
+# draw.draw_corners(frame, game_corners, color=(255,0,0))
+# draw.draw_grids(frame, stash_grids, color=(255,0,0))
+# draw.draw_grids(frame, game_grids, color=(0,255,0))
+# draw.draw_partitions(frame)
+# draw.draw_connectors(frame, stash_connectors)
+# draw.draw_connectors(frame, game_connectors)
 
-if des_domino[0] != -1:
-	draw.draw_pos_ori(frame, des_get)
-	draw.draw_pos_ori(frame, des_put, color=(255,0,0))
+# if des_domino[0] != -1:
+# 	draw.draw_pos_ori(frame, des_get)
+# 	draw.draw_pos_ori(frame, des_put, color=(255,0,0))
 
-cv2.imshow('frame', frame)
-has_error = cv2.waitKey(0) == ord('q')
-write.write_file(frame, has_error=has_error)
+# cv2.imshow('frame', frame)
+# has_error = cv2.waitKey(0) == ord('q')
+# write.write_file(frame, has_error=has_error)
 
 # Transform
 if des_domino[0] != -1:

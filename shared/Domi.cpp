@@ -36,13 +36,14 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
            rhand(_rhand),
            rwrist(_rwrist),
            hpos(_hpos),
+           gripper_offset(0.005),
            dt(_dt),
            iter(0),
            py_fp(NULL),
            x_rest(-0.47),
            y_rest(-0.57),
-           z_above(0.4),
-           z_depth(0.31) {
+           z_above(0.42),
+           z_depth(0.297) {
            
     is_simulator = (dt > 0);
     
@@ -66,11 +67,11 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
         torque_lim << 1, 1, 1, 1, 1, 1, 1; //<< 175.0, 175.0, 109.0, 109.0, 109.0, 39.0, 39.0;
     }
     else {
-        kpO = 225;
-        kvO = 3;
-        kp = 360;   // Worked well with 360
-        kv = 28;    // Worked well with 28
-        kq = 0;
+        kpO = 235;
+        kvO = 4;
+        kp = 370;   // Worked well with 360 // increased by 10 
+        kv = 32;    // Worked well with 28
+        kq = 1;
         kdq = 15; // Worked well with 15 on the robot. Position control should account for the rest.
         kq_lim = 10;
         kdq_lim = 10;
@@ -127,21 +128,25 @@ void Domi::mainloop() {
 void Domi::move_to_rest() {
 
     if (iter == 0) {
-        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
     }
 
     control_pos_ori();
     
    if (!has_error()) {
         state = Domi::REST;
-        rest_end = get_time() + 10;
+        rest_end = get_time() + 5;
         std::cout<<"\nMOVE_TO_REST -> REST\n";
    }
 }
 
 void Domi::rest() {
+
     // Hold current position and orientation
     control_pos_ori();
+
+    // Open the gripper all the way
+    schunkGripper->SetDesiredPosition(80, 0, 100);
 
     if (get_time() >= rest_end) {
         state = Domi::OBSERVATION;
@@ -197,10 +202,10 @@ void Domi::observation() {
         if (x_get == -1) {
             // No more moves. Go back to rest.
             state = Domi::MOVE_TO_REST;
-            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
             std::cout<<"\nOBSERVATION -> MOVE_TO_REST\n";
         } else {
-            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
+            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 4);
             state = Domi::GET_ABOVE;
             std::cout<<"\nOBSERVATION -> GET_ABOVE\n";
         }
@@ -213,7 +218,7 @@ void Domi::get_above() {
 
     if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
         state = Domi::GET_DEPTH;
-        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 5);
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 4);
         std::cout<<"\nGET_ABOVE -> GET_DEPTH\n";
     }
 }
@@ -222,10 +227,10 @@ void Domi::get_depth() {
 
     control_pos_ori();
 
-    if (!has_error(0.007, 0.01)) {
+    if (!has_error(0.006, 0.006)) {
         state = Domi::GET_GRASP;
-        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 5);
-	    rest_end = get_time() + 2;
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 4);
+	    rest_end = get_time() + 3;
         std::cout<<"\nGET_DEPTH -> GET_GRASP\n";
     }
 }
@@ -233,11 +238,11 @@ void Domi::get_depth() {
 void Domi::get_grasp() {
 
     control_pos_ori();
-    schunkGripper->SetDesiredPosition(35, 0, 100);
+    schunkGripper->SetDesiredPosition(47, 0, 100);
 
     if (get_time() >= rest_end) {
         state = Domi::GET_REVERSE_DEPTH;
-        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 5);
+        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 4);
         std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
     }
 }
@@ -248,7 +253,7 @@ void Domi::get_reverse_depth() {
 
     if (!has_error(0.01, 0.01)) {
         state = Domi::PUT_ABOVE;
-        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 5);
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 4);
         rest_end = get_time() + 2;
         std::cout<<"\nGET_REVERSE_DEPTH -> PUT_ABOVE\n";
    }
@@ -260,7 +265,7 @@ void Domi::put_above() {
 
     if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
         state = Domi::PUT_DEPTH;
-        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 5);
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 4);
         std::cout<<"\nPUT_ABOVE -> PUT_DEPTH\n";
     }
 }
@@ -269,9 +274,9 @@ void Domi::put_depth() {
 
     control_pos_ori();
 
-    if (!has_error(0.007, 0.01)) {
+    if (!has_error(0.015, 0.006)) {
         state = Domi::PUT_GRASP;
-        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 5);
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 4);
         rest_end = get_time() + 2;
         std::cout<<"\nPUT_DEPTH -> PUT_GRASP\n";
     }
@@ -280,11 +285,11 @@ void Domi::put_depth() {
 void Domi::put_grasp() {
 
     control_pos_ori();
-    schunkGripper->SetDesiredPosition(50, 0, 100);
+    schunkGripper->SetDesiredPosition(80, 0, 100);
 
     if (get_time() >= rest_end) {
         state = Domi::PUT_REVERSE_DEPTH;
-        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 5);
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 4);
         std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
     }
 }
@@ -295,7 +300,7 @@ void Domi::put_reverse_depth() {
 
     if (!has_error(0.01, 0.01)) {
         state = Domi::MOVE_TO_REST;
-        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 5);
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
         std::cout<<"\nPUT_REVERSE_DEPTH -> MOVE_TO_REST\n";
    }
 }
@@ -431,12 +436,18 @@ void Domi::control_pos_ori() {
 
 
     // Setting up the control for the last joint
-    if (state == Domi::GET_ABOVE || state == Domi::PUT_ABOVE) {
+    if (state == Domi::GET_ABOVE ||
+        state == Domi::PUT_ABOVE) {
         Gamma(6) = kpO * (ori_via - ori_cur) - kvO * rio.sensors_.dq_(6);
     }
 
     // Joint space control
-    Gamma += /*N */ kq * - rio.sensors_.q_ - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain + kdq_lim * dq_limit_gain;
+    Eigen::VectorXd n = rio.sensors_.q_;
+    n(0) = 0;
+    n(4) = 0;
+    n(5) = 0;
+    n(6) = 0;
+    Gamma += /*N */ kq * - n - kdq * rio.sensors_.dq_ + kq_lim * q_limit_gain + kdq_lim * dq_limit_gain;
     
     // Set hard constraints on torque limits
     for (int i = 0; i < 7; i = i + 1) {
@@ -517,7 +528,7 @@ void Domi::compliant_control() {
     dyn_scl.computeGCModel(&rio.sensors_,&rgcm);
 
     if (iter == 0) {
-        schunkGripper->SetDesiredPosition(50, 0, 100);
+        schunkGripper->SetDesiredPosition(35, 0, 100);
         R_des(0,0) = 0;  R_des(0,1) = -1; R_des(0,2) = 0;
         R_des(1,0) = -1; R_des(1,1) = 0;  R_des(1,2) = 0;
         R_des(2,0) = 0;  R_des(2,1) = 0;  R_des(2,2) = -1;

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 void CloseGripper()
 {
-    schunkGripper->SetDesiredPosition(35, 0, 100);
+    schunkGripper->SetDesiredPosition(42, 0, 100);
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 }
 

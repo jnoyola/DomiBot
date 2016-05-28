@@ -53,6 +53,7 @@ private:
     scl::SRigidBodyDyn *rhand;
     scl::SRigidBodyDyn *rwrist;
     const Eigen::Vector3d &hpos;
+    const double gripper_offset;
     
     Eigen::MatrixXd J_hand, J_wrist, Jhv, Jhw, Jwv, A, A_inv, Lambda, LambdaO, M, MO, Jwv_bar, N;
     Eigen::Matrix3d R, R_des;
