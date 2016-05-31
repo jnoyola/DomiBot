@@ -69,7 +69,7 @@ Domi::Domi(scl::SGcModel &_rgcm,                // Robot data structure with dyn
     else {
         kpO = 235;
         kvO = 4;
-        kp = 370;   // Worked well with 360 // increased by 10 
+        kp = 380;   // Worked well with 360 // increased by 10 
         kv = 32;    // Worked well with 28
         kq = 1;
         kdq = 15; // Worked well with 15 on the robot. Position control should account for the rest.
@@ -128,14 +128,14 @@ void Domi::mainloop() {
 void Domi::move_to_rest() {
 
     if (iter == 0) {
-        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 2);
     }
 
     control_pos_ori();
     
    if (!has_error()) {
         state = Domi::REST;
-        rest_end = get_time() + 5;
+        rest_end = get_time() + 3;
         std::cout<<"\nMOVE_TO_REST -> REST\n";
    }
 }
@@ -202,10 +202,11 @@ void Domi::observation() {
         if (x_get == -1) {
             // No more moves. Go back to rest.
             state = Domi::MOVE_TO_REST;
-            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
+            set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 2);
+            std::cout<<"\nNO MORE MOVES REMAINING\n";
             std::cout<<"\nOBSERVATION -> MOVE_TO_REST\n";
         } else {
-            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 4);
+            set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 2);
             state = Domi::GET_ABOVE;
             std::cout<<"\nOBSERVATION -> GET_ABOVE\n";
         }
@@ -218,7 +219,7 @@ void Domi::get_above() {
 
     if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
         state = Domi::GET_DEPTH;
-        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 4);
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 2);
         std::cout<<"\nGET_ABOVE -> GET_DEPTH\n";
     }
 }
@@ -229,7 +230,7 @@ void Domi::get_depth() {
 
     if (!has_error(0.006, 0.006)) {
         state = Domi::GET_GRASP;
-        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 4);
+        set_des_pos_ori_duration(x_get, y_get, z_depth, ori_get, 2);
 	    rest_end = get_time() + 3;
         std::cout<<"\nGET_DEPTH -> GET_GRASP\n";
     }
@@ -242,7 +243,7 @@ void Domi::get_grasp() {
 
     if (get_time() >= rest_end) {
         state = Domi::GET_REVERSE_DEPTH;
-        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 4);
+        set_des_pos_ori_duration(x_get, y_get, z_above, ori_get, 2);
         std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
     }
 }
@@ -253,7 +254,7 @@ void Domi::get_reverse_depth() {
 
     if (!has_error(0.01, 0.01)) {
         state = Domi::PUT_ABOVE;
-        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 4);
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 2);
         rest_end = get_time() + 2;
         std::cout<<"\nGET_REVERSE_DEPTH -> PUT_ABOVE\n";
    }
@@ -265,7 +266,7 @@ void Domi::put_above() {
 
     if (!has_error(0.01, 0.01) && !has_ori_error(0.02)) {
         state = Domi::PUT_DEPTH;
-        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 4);
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 2);
         std::cout<<"\nPUT_ABOVE -> PUT_DEPTH\n";
     }
 }
@@ -276,7 +277,7 @@ void Domi::put_depth() {
 
     if (!has_error(0.015, 0.006)) {
         state = Domi::PUT_GRASP;
-        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 4);
+        set_des_pos_ori_duration(x_put, y_put, z_depth, ori_put, 2);
         rest_end = get_time() + 2;
         std::cout<<"\nPUT_DEPTH -> PUT_GRASP\n";
     }
@@ -289,7 +290,7 @@ void Domi::put_grasp() {
 
     if (get_time() >= rest_end) {
         state = Domi::PUT_REVERSE_DEPTH;
-        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 4);
+        set_des_pos_ori_duration(x_put, y_put, z_above, ori_put, 2);
         std::cout<<"\nGET_GRASP -> GET_REVERSE_DEPTH\n";
     }
 }
@@ -300,7 +301,7 @@ void Domi::put_reverse_depth() {
 
     if (!has_error(0.01, 0.01)) {
         state = Domi::MOVE_TO_REST;
-        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 4);
+        set_des_pos_ori_duration(x_rest, y_rest, z_above, 0, 2);
         std::cout<<"\nPUT_REVERSE_DEPTH -> MOVE_TO_REST\n";
    }
 }

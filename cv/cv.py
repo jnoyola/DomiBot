@@ -38,22 +38,22 @@ stash_connectors = detectors.all_end_rects_to_connectors(stash_end_rects, mask, 
 train_connectors = detectors.all_end_rects_to_connectors(train_end_rects, mask, pips)
 
 # Strategy
-des_domino, des_get, des_put = strategy.desired_targets(stash_connectors, train_connectors[0], size + 5)
+des_domino, des_get, des_put = strategy.desired_targets(stash_connectors, train_connectors[0], size + 12)
 
 # Draw
-draw.draw_all_rects(frame, stash_end_rects)
-draw.draw_all_rects(frame, train_end_rects)
-draw.draw_partitions(frame)
-draw.draw_connectors(frame, stash_connectors)
-draw.draw_connectors(frame, train_connectors)
+# draw.draw_all_rects(frame, stash_end_rects)
+# draw.draw_all_rects(frame, train_end_rects)
+# draw.draw_partitions(frame)
+# draw.draw_connectors(frame, stash_connectors)
+# draw.draw_connectors(frame, train_connectors)
 
-if des_domino[0] != -1:
-	draw.draw_pos_ori(frame, des_get)
-	draw.draw_pos_ori(frame, des_put)
+# if des_domino[0] != -1:
+# 	draw.draw_pos_ori(frame, des_get)
+# 	draw.draw_pos_ori(frame, des_put)
 
-cv2.imshow('frame', frame)
-has_error = cv2.waitKey(0) == ord('q')
-write.write_file(frame, has_error=has_error)
+# cv2.imshow('frame', frame)
+# has_error = cv2.waitKey(0) == ord('q')
+# write.write_file(frame, has_error=has_error)
 
 # Transform
 if des_domino[0] != -1:
