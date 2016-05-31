@@ -442,6 +442,7 @@ void Domi::control_pos_ori() {
     }
 
     // Joint space control
+    // Perform pquedo-nullspace damping by pulling joints 1, 2, and 3 up towards 0
     Eigen::VectorXd n = rio.sensors_.q_;
     n(0) = 0;
     n(4) = 0;

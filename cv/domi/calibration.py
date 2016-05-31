@@ -1,26 +1,26 @@
 import numpy as np
 import cv2
 
-def calibrate_with_corners(corners, should_print=False):
+def calibrate_with_rects(rects):
     total_short_edge_len = 0
     num_used = 0
-    for domino in corners:
-        if len(domino) != 4:
-            continue
-        
+    for rect in rects:
+
+        # Compute distances between each adjacent pair of points
         dists = []
         
-        x_prev = domino[-1][0]
-        y_prev = domino[-1][1]
-        for corner in domino:
-            x = corner[0]
-            y = corner[1]
+        x0 = rect[-1][0]
+        y0 = rect[-1][1]
+        for corner in rect:
+            x1 = corner[0]
+            y1 = corner[1]
             
-            dists.append((x - x_prev)**2 + (y - y_prev)**2)
+            dists.append((x1 - x0)**2 + (y1 - y0)**2)
 
-            x_prev = x
-            y_prev = y
+            x0 = x1
+            y0 = y1
 
+        # Sort dists to get the two short edges of the domino
         dists.sort()
         total_short_edge_len += np.sqrt(dists[0])
         total_short_edge_len += np.sqrt(dists[1])
@@ -30,18 +30,27 @@ def calibrate_with_corners(corners, should_print=False):
     
     short_edge_len = total_short_edge_len / (2 * num_used)
     
-    # Multiply by 0.5 long:short edge ratio
-    short_edge_len *= 1.06
+    # Manual adjustment
+    short_edge_len *= 0.85
 
-    if should_print:
-        print "Calibration: using " + str(num_used) + " individual dominoes"
-        print "Calibration: short_edge_len = " + str(short_edge_len)
     return short_edge_len
 
 def cam_to_world_point(frame, point):
     x = point[0][0]
     y = point[0][1]
     ori = point[1]
+
+    K = np.matrix('815.90884787    0.          318.48946624;' \
+                  '  0.          816.33085196  240.85611606;' \
+                  '  0.            0.            1.        ')
+    distortion = np.matrix('-7.99547349e-02   9.59482968e-01  -1.85215181e-03  -2.48602033e-03  -3.25328988e+00')
+
+    p = np.zeros((1,1,2), dtype=np.float32)
+    p[0,0,0] = y
+    p[0,0,1] = x
+    p = cv2.undistortPoints(p, K, distortion, P=K)
+    y = p[0,0,0]
+    x = p[0,0,1]
 
     # w = frame.shape[1]
     # h = frame.shape[0]
@@ -61,15 +70,15 @@ def cam_to_world_point(frame, point):
     #       + (y_w[1] - y_w[0]) * (x - x_c[0]) / (x_c[1] - x_c[0]) \
     #       + (y_w[2] - y_w[0]) * (y - y_c[0]) / (y_c[2] - y_c[0])
 
-    M = np.matrix('-8.57100170e+02   2.38442982e+01   3.25323825e+02   3.07510401e+02;' \
-                  '-1.29961914e+01  -8.55575310e+02   2.21193764e+02   1.83634546e+02;' \
-                  ' 1.31384576e-02   2.52420606e-02   9.99595028e-01   7.42007236e-01')
+    M = np.matrix('-8.17535613e+02   1.05272869e+01   3.14113809e+02   3.31342082e+02;' \
+                  '-1.44082520e+01  -8.18158105e+02   2.34131260e+02   1.61925907e+02;' \
+                  '-5.47550885e-03  -8.13684368e-03   9.99951904e-01   7.08582730e-01')
 
     x_new =  (M[0,1]*M[1,3] - M[0,3]*M[1,1] + (M[1,1]*M[2,3] - M[1,3]*M[2,1])*x + (M[0,3]*M[2,1] - M[0,1]*M[2,3])*y)
     y_new = -(M[0,0]*M[1,3] - M[0,3]*M[1,0] + (M[1,0]*M[2,3] - M[1,3]*M[2,0])*x + (M[0,3]*M[2,0] - M[0,0]*M[2,3])*y)
     w_new =  (M[0,0]*M[1,1] - M[0,1]*M[1,0] + (M[1,0]*M[2,1] - M[1,1]*M[2,0])*x + (M[0,1]*M[2,0] - M[0,0]*M[2,1])*y)
 
-    x_new = 0.1444 - x_new/w_new
-    y_new = -0.6186 + y_new/w_new
+    x_new = 0.1933 - x_new/w_new
+    y_new = -0.6107 + y_new/w_new
 
     return ((x_new, y_new), ori)

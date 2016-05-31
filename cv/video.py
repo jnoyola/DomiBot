@@ -12,7 +12,7 @@ cap = cv2.VideoCapture(0)
 
 while True:
 	ret, frame = cap.read()
-	frame = cv2.imread('frame10.png')
+	frame = cv2.imread('frame9.png')
 
 	frame = cv2.resize(frame, None, fx=2, fy=2, interpolation = cv2.INTER_CUBIC)
 

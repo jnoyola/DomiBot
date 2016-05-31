@@ -1,0 +1,5 @@
+- joint limit when domino is in the corner - fix using nullspace damping maybe
+- vibrating joint 7 (left side usually (robot pov))
+- more work on calibration/accuracy - placing dominos on train need to be accurate
+
+-

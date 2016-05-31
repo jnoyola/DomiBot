@@ -4,11 +4,11 @@ import glob
 
 def cam_to_world_point(K,dist,M,u,v,z=0):
 	p = np.zeros((1,1,2), dtype=np.float32)
-	p[0,0,0] = u
-	p[0,0,1] = v
+	p[0,0,0] = v
+	p[0,0,1] = u
 	p = cv2.undistortPoints(p, K, dist, P=K)
-	u = p[0,0,0]
-	v = p[0,0,1]
+	v = p[0,0,0]
+	u = p[0,0,1]
 
 	m00 = M[0,0]
 	m01 = M[0,1]
@@ -26,7 +26,7 @@ def cam_to_world_point(K,dist,M,u,v,z=0):
 	y = -(m00*m13 - m03*m10 + m10*m23*u - m13*m20*u - m00*m23*v + m03*m20*v + m00*m12*m23*z - m00*m13*m22*z - m02*m10*m23*z + m02*m13*m20*z + m03*m10*m22*z - m03*m12*m20*z)
 	w =  (m00*m11 - m01*m10 + m10*m21*u - m11*m20*u - m00*m21*v + m01*m20*v - m00*m11*m22*z + m00*m12*m21*z + m01*m10*m22*z - m01*m12*m20*z - m02*m10*m21*z + m02*m11*m20*z)
 	# return (x/w, y/w)
-	return (0.1444 - x/w, -0.6116 + y/w)
+	return (0.1933 - x/w, -0.6107 + y/w)
 
 grid_width = 9
 grid_height = 6
@@ -72,13 +72,13 @@ cv2.destroyAllWindows()
 ret, K, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 print "RMS: " + str(ret)
 
-ref_idx = 2
+ref_idx = 1
 R,J = cv2.Rodrigues(rvecs[ref_idx])
 M = K.dot(np.concatenate((R, tvecs[ref_idx]), axis=1))
 
 print K
 print dist
 print M
-print cam_to_world_point(K,dist,M,7,458,z=0)
+print cam_to_world_point(K,dist,M,266,98,z=0)
 
  #-0.2037 -0.8065
